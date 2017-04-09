@@ -5,7 +5,7 @@ from tkinter.filedialog import askopenfilename
 import locale
 import csv
 
-csvHeader = [['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']]
+csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 
 # ------- On YnabEntry -------
 # Categories will only import if the category already exists in your budget 
@@ -79,13 +79,6 @@ for row in reader:
         writer.writerow(parseRow(BankEntry._make(row)))
     #csvRows.append(parseRow(row))
 
-### Will crash on empty row (i.e. the last row)
-#for entry in map(BankEntry._make, reader):
-#    print(entry)
-#    if reader.line_num == 1:    # Skip first row
-#        continue
-#    #writer.writerow(parseRow(entry))
-#    #print(parseRow(entry))
 
 inputFile.close()
 outputFile.close()
