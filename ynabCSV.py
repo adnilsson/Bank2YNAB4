@@ -26,10 +26,6 @@ BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance')
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
 
-# For some reason, I can't get locale.atoi to behave, so I use this instead.
-def strToInt(floatString):
-    return int(locale.atof(floatString))  
-
 # arg should be a BankEntry
 def parseRow(bankline):
     # For my bank's csv-files I need ',' for decimal separator
