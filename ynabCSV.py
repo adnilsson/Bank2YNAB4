@@ -21,7 +21,6 @@ BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance')
 #TODO:
 # 2. create a dict mapping common companies in the 'trasaction' field to ynab payees
 # 3. User dialog window asking what the payee should be when no payee was found. and add to dict
-
 # 5. Let user hardcode transactions that should be ignored.
 
 def namedtupleLen(tupleArg):
@@ -38,11 +37,11 @@ def parseRow(bankline):
     loc = locale.getlocale()
     locale.setlocale(locale.LC_NUMERIC, 'Italian_Italy.1252') 
     
-    if type(bankline) is (not BankEntry): raise TypeError('the given argument is not a line from the bank\'s csv-file')
-    if bankline.amount == False: raise ValueError('A transaction must have an amount')
+    if type(bankline) is not BankEntry: raise TypeError('the given argument is not a line from the bank\'s csv-file')
+    if not bankline.amount: raise ValueError('A transaction must have an amount')
 
     amount = locale.atof(bankline.amount)
-    if abs(amount) < 0.01: raise ValueError('A transaction must be of more than 0.01 units in the currency used')
+    if abs(amount) < 0.01: raise ValueError('A transaction must be >= 0.01 units in the currency used')
     
     bankInflow  = abs(amount) if amount > 0 else ''
     bankOutflow = abs(amount) if amount < 0 else ''
@@ -67,7 +66,7 @@ def getFile():
     else: raise OSError('Invalid file path')   
 
 def badFormatWarn(entry):
-    return 'Incorrectly formated row:\n{0}\n Skipping...'.format(entry)
+    return 'Incorrectly formated row:\n\t{0}\n Skipping...'.format(entry)
 
 Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing        
 
@@ -90,8 +89,9 @@ try:
                             parsedRow = parseRow(BankEntry._make(row))
                             print(parsedRow)
                             writer.writerow(parsedRow)
-                        except (ValueError, TypeError):
-                            warnings.warn(badFormatWarn(row), RuntimeWarning)
+                        except (ValueError, TypeError) as e:
+                            msg ='{0}\n\tError: {1}'.format(row,e)
+                            warnings.warn(badFormatWarn(msg), RuntimeWarning)
             except csv.Error as e:
                 sys.exit('file %s, line %d: %s' % (inputFile, reader.line_num, e))
 except (IOError, NameError, OSError) as e:
