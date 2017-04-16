@@ -4,6 +4,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 import locale
 import csv
+import warnings
 
 csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 
@@ -20,7 +21,7 @@ BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance')
 #TODO:
 # 2. create a dict mapping common companies in the 'trasaction' field to ynab payees
 # 3. User dialog window asking what the payee should be when no payee was found. and add to dict
-# 4. another dict for payees to categories?? (test how well ynab handles empty category-fields first)
+
 # 5. Let user hardcode transactions that should be ignored.
 
 def namedtupleLen(tupleArg):
@@ -36,17 +37,16 @@ def parseRow(bankline):
     # and '.' for thousand separator
     loc = locale.getlocale()
     locale.setlocale(locale.LC_NUMERIC, 'Italian_Italy.1252') 
-
-    assert type(bankline) is BankEntry, 'the given argument is not a line from the bank\'s csv-file'
-    assert (not bankline.amount)  == False, 'A transaction must have an amount'
+    
+    if type(bankline) is (not BankEntry): raise TypeError('the given argument is not a line from the bank\'s csv-file')
+    if bankline.amount == False: raise ValueError('A transaction must have an amount')
 
     amount = locale.atof(bankline.amount)
-    assert abs(amount) > 0.00, 'A transaction must be of more than 0.00 units in the currency used'
+    if abs(amount) < 0.01: raise ValueError('A transaction must be of more than 0.01 units in the currency used')
     
     bankInflow  = abs(amount) if amount > 0 else ''
     bankOutflow = abs(amount) if amount < 0 else ''
 
-    #entry_date = datetime.strptime('2016-10-26', '%Y-%m-%d') #covert to date
     date = datetime.strptime(bankline.date, '%Y-%m-%d') #covert to date
     dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
 
@@ -55,32 +55,48 @@ def parseRow(bankline):
 
     return YnabEntry(date=dateStr, payee= '', category='', memo=bankline.memo, outflow=bankOutflow, inflow = bankInflow) 
 
-Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-inputPath = askopenfilename()
+def getFile():
+    inputPath = askopenfilename(
+                filetypes=[('CSV files', '*.csv'),
+                           ('All files', '*'),
+                           ],
+                initialdir='.')
+    if inputPath:
+        file = open(inputPath, encoding='utf-8', newline='')
+        return file
+    else: raise OSError('Invalid file path')   
 
+def badFormatWarn(entry):
+    return 'Incorrectly formated row:\n{0}\n Skipping...'.format(entry)
+
+Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing        
+
+# Attempt to parse input file to a YNAB-formatted csv file 
 try:
-    inputFile = open(inputPath, encoding='utf-8', newline='')
-except IOError:
-    print('Cannot open ', inputPath)
+    with getFile() as inputFile:
+        with open('ynabImport.csv', "w", encoding='utf-8', newline='') as outputFile:
+            reader = csv.reader(inputFile)
+            writer = csv.writer(outputFile)
+            writer.writerow(csvHeader)
+
+            try:
+                for row in reader:
+                    if reader.line_num == 1:    # Skip first row
+                        continue
+                    if (row and len(row) != namedtupleLen(BankEntry)):
+                        warnings.warn(badFormatWarn(row), RuntimeWarning) 
+                    elif (row):
+                        try:
+                            parsedRow = parseRow(BankEntry._make(row))
+                            print(parsedRow)
+                            writer.writerow(parsedRow)
+                        except (ValueError, TypeError):
+                            warnings.warn(badFormatWarn(row), RuntimeWarning)
+            except csv.Error as e:
+                sys.exit('file %s, line %d: %s' % (inputFile, reader.line_num, e))
+except (IOError, NameError, OSError) as e:
+    print('Failed to load input file: {0}'.format(e))
 else:
-    pass
-
-outputFile = open('ynabImport.csv', "w", encoding='utf-8', newline='')
-
-reader = csv.reader(inputFile)
-writer = csv.writer(outputFile)
-writer.writerow(csvHeader)
-
-for row in reader:
-    if reader.line_num == 1:    # Skip first row
-        continue
-    if (row and len(row) == namedtupleLen(BankEntry)) :
-        print(parseRow(BankEntry._make(row)))
-        writer.writerow(parseRow(BankEntry._make(row)))
-    #csvRows.append(parseRow(row))
-
-
-inputFile.close()
-outputFile.close()
-
-print("Done")
+    print("Done")
+    
+ 
