@@ -60,15 +60,9 @@ def parseRow(bankline):
                      inflow = bankInflow) 
 
 
-def parseRows():
+def parseRows(inputPath):
     parsedRows = [] 
     emptyRows = 0
-
-    try:
-        inputPath = getFile()
-    except (IOError, NameError, OSError) as e:
-            print('Failed to locate input file: {0}'.format(e))  
-            return []  
 
     with open(inputPath, encoding='utf-8', newline='')  as inputFile:
         reader = csv.reader(inputFile)
@@ -101,6 +95,18 @@ def parseRows():
     return parsedRows
 
 
+def writeOutput(parsedRows):
+    with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
+        writer = csv.writer(outputFile)
+        try:
+            writer.writerow(csvHeader)
+            writer.writerows(parsedRows)
+        except (ValueError, TypeError) as e:
+            msg ='{0}\n\tError: {1}'.format(row,e)
+            warnings.warn(badFormatWarn(msg), RuntimeWarning)
+        except csv.Error as e:
+            sys.exit('file %s, line %d: %s' % (outputFile, writer.line_num, e)) 
+
 def getFile():
     inputPath = askopenfilename(
                 filetypes=[('CSV files', '*.csv'),
@@ -121,17 +127,14 @@ def badFormatWarn(entry):
 Tk().withdraw() # keep the root window from appearing        
 
 # Attempt to parse input file to a YNAB-formatted csv file
-with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
-    writer = csv.writer(outputFile)
-    try:
-        parsedRows = parseRows()
-        writer.writerow(csvHeader)
-        writer.writerows(parsedRows)
-    except (ValueError, TypeError) as e:
-        msg ='{0}\n\tError: {1}'.format(row,e)
-        warnings.warn(badFormatWarn(msg), RuntimeWarning)
-    except csv.Error as e:
-        sys.exit('file %s, line %d: %s' % (outputFile, writer.line_num, e)) 
+
+try:
+    inputPath = getFile()
+    parsed = parseRows(inputPath)
+    writeOutput(parsed)
+except (IOError, NameError, OSError) as e:
+    print('Failed to locate input file: {0}'.format(e))  
+    sys.exit()  
 
     
  
