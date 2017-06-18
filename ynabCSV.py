@@ -6,6 +6,7 @@ import locale
 import csv
 import warnings
 
+# Specified by YNAB4
 csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 
 # ------- On YnabEntry -------
@@ -60,8 +61,8 @@ def parseRow(bankline):
                      inflow = bankInflow) 
 
 
-def parseRows(inputPath):
-    parsedRows = [] 
+def readInput(inputPath):
+    readRows = []
     emptyRows = 0
 
     with open(inputPath, encoding='utf-8', newline='')  as inputFile:
@@ -73,25 +74,32 @@ def parseRows(inputPath):
                 if (row and len(row) != namedtupleLen(BankEntry)):
                     warnings.warn(badFormatWarn(row), RuntimeWarning) 
                 elif (row):
-                    try:
-                        validRow = parseRow(BankEntry._make(row))
-                        print(validRow) # Row successfully parsed
-                        parsedRows.append(validRow)
-                    except (ValueError, TypeError) as e:
-                        msg ='\n\t{0}\n\tError: {1}'.format(row,e)
-                        warnings.warn(badFormatWarn(msg), RuntimeWarning)
+                    bankRow = BankEntry._make(row)
+                    readRows.append(bankRow)
                 else:
                     warnings.warn(
                         '\n\tSkipping row {0}: {1}'
-                        .format(reader.line_num, row), RuntimeWarning
-                        )
+                        .format(reader.line_num, row), RuntimeWarning)
                     emptyRows += 1
         except csv.Error as e:
             sys.exit('file %s\n line %s: %s' % (inputFile, row, e))    
         else: 
-            print('{0}/{1} line(s) successfully parsed '
+            print('{0}/{1} line(s) successfully read '
                   '(ignored {2} blank line(s)).'
-                  .format(len(parsedRows), reader.line_num-1, emptyRows))
+                  .format(len(readRows), reader.line_num-1, emptyRows))
+    return readRows
+
+
+def parseRows(bankRows):
+    parsedRows = [] 
+    for row in bankRows:
+        try:
+            parsedRows.append(parseRow(row))
+        except (ValueError, TypeError) as e:
+            msg ='\n\t{0}\n\tError: {1}'.format(row,e)
+            warnings.warn(badFormatWarn(msg), RuntimeWarning)
+    print('{0}/{1} line(s) successfully parsed '
+          .format(len(parsedRows), len(bankRows)))
     return parsedRows
 
 
@@ -107,13 +115,13 @@ def writeOutput(parsedRows):
         except csv.Error as e:
             sys.exit('file %s, line %d: %s' % (outputFile, writer.line_num, e)) 
 
+
 def getFile():
     inputPath = askopenfilename(
                 filetypes=[('CSV files', '*.csv'),
                            ('All files', '*'), # Used for debugging only
                            ],
-                initialdir='.'
-                )
+                initialdir='.')
     if inputPath:
         return inputPath
     else: 
@@ -130,7 +138,8 @@ Tk().withdraw() # keep the root window from appearing
 
 try:
     inputPath = getFile()
-    parsed = parseRows(inputPath)
+    bankData = readInput(inputPath)
+    parsed = parseRows(bankData)
     writeOutput(parsed)
 except (IOError, NameError, OSError) as e:
     print('Failed to locate input file: {0}'.format(e))  
