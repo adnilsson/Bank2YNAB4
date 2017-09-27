@@ -22,7 +22,6 @@ BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance')
 #TODO:
 # 2. create a dict mapping common companies in the 'trasaction' field to ynab payees
 # 3. User dialog window asking what the payee should be when no payee was found. and add to dict
-# 5. Let user hardcode transactions that should be ignored.
 
 
 def namedtupleLen(tupleArg):
@@ -63,7 +62,9 @@ def parseRow(bankline):
 
 def readInput(inputPath):
     readRows = []
+    toIgnore = readIgnore()
     emptyRows = 0
+    ignoredRows = []
 
     with open(inputPath, encoding='utf-8', newline='')  as inputFile:
         reader = csv.reader(inputFile)
@@ -71,11 +72,16 @@ def readInput(inputPath):
             for row in reader:
                 if reader.line_num == 1: # Skip first row (header)
                     continue
+
                 if (row and len(row) != namedtupleLen(BankEntry)):
-                    warnings.warn(badFormatWarn(row), RuntimeWarning) 
-                elif (row):
+                    warnings.warn(badFormatWarn(row), RuntimeWarning)
+                elif row:
                     bankRow = BankEntry._make(row)
-                    readRows.append(bankRow)
+                    for i in toIgnore:
+                        if i not in bankRow.transaction:
+                            readRows.append(bankRow)
+                        else:
+                            ignoredRows.append(bankRow)
                 else:
                     warnings.warn(
                         '\n\tSkipping row {0}: {1}'
@@ -85,8 +91,9 @@ def readInput(inputPath):
             sys.exit('file %s\n line %s: %s' % (inputFile, row, e))    
         else: 
             print('{0}/{1} line(s) successfully read '
-                  '(ignored {2} blank line(s)).'
-                  .format(len(readRows), reader.line_num-1, emptyRows))
+                  '(ignored {2} blank line(s) and '
+                   '{3} transactions found in accignore).'
+                  .format(len(readRows), reader.line_num-1, emptyRows, len(ignoredRows)))
     return readRows
 
 
@@ -102,6 +109,13 @@ def parseRows(bankRows):
           .format(len(parsedRows), len(bankRows)))
     return parsedRows
 
+
+def readIgnore():
+    accounts = []
+    with open('accignore.txt', encoding='utf-8', newline='') as ignored:
+        for account in ignored:
+            accounts.append(account)
+    return accounts
 
 def writeOutput(parsedRows):
     with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
@@ -141,9 +155,7 @@ try:
     bankData = readInput(inputPath)
     parsed = parseRows(bankData)
     writeOutput(parsed)
+    input("Press any key to exit...")
 except (IOError, NameError, OSError) as e:
     print('Failed to locate input file: {0}'.format(e))  
     sys.exit()  
-
-    
- 
