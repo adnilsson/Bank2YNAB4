@@ -7,16 +7,9 @@ import csv
 import warnings
 
 #TODO:
-# 1. Config file that allows a user to specify thousands and decimal separators.
-# 2. create a mapping from  companies in the 'trasaction' field to ynab payees
-# 3. User dialog window asking what the payee should be when no payee was found. and add to mapping
+# 1. create a mapping from  companies in the 'trasaction' field to ynab payees
+# 2. User dialog window asking what the payee should be when no payee was found. and add to mapping
 
-
-# "Set the locale for all categories to the user's default setting"
-# This is needed due to different conventions for decimal and thousand 
-# separators. It is assumed that the bank's csv file uses the same locale
-# as you have on your computer. 
-locale.setlocale(locale.LC_ALL, '')
 
 # Specified by YNAB4
 csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
@@ -45,13 +38,11 @@ def parseRow(bankline: BankEntry) -> YnabEntry:
     if not bankline.amount: 
         raise ValueError('A transaction must have an amount')
 
-    amount = parseAmount(bankline.amount)
-    if abs(amount) < 0.01: 
-        raise ValueError('A transaction must be >= 0.01' 
-                         'units in the currency used')
+    strAmount = bankline.amount.strip()
+    amountSign = '-' if strAmount[0] == '-' else '+'
     
-    bankInflow  = abs(amount) if amount > 0 else ''
-    bankOutflow = abs(amount) if amount < 0 else ''
+    bankInflow  = strAmount if amountSign == '+' else ''
+    bankOutflow = strAmount[1::] if amountSign == '-' else ''
 
     date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
     dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
@@ -59,15 +50,6 @@ def parseRow(bankline: BankEntry) -> YnabEntry:
     return YnabEntry(date=dateStr, payee= '', category='', 
                      memo=bankline.memo, outflow=bankOutflow, 
                      inflow = bankInflow) 
-
-
-# locale.atof() uses LC_NUMERIC to determine separating characters, but in
-# my locale and csv file, these differ from the separators for monetary values. 
-def parseAmount(amount: str) -> float:
-    conv = locale.localeconv()
-    amount = amount.replace(conv['mon_thousands_sep'], conv['thousands_sep'])
-    amount = amount.replace(conv['mon_decimal_point'], conv['decimal_point'])
-    return locale.atof(amount)
 
 
 def parseRows(bankRows: [BankEntry]) -> [YnabEntry]:
