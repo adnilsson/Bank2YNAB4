@@ -6,6 +6,18 @@ import locale
 import csv
 import warnings
 
+#TODO:
+# 1. Config file that allows a user to specify thousands and decimal separators.
+# 2. create a mapping from  companies in the 'trasaction' field to ynab payees
+# 3. User dialog window asking what the payee should be when no payee was found. and add to mapping
+
+
+# "Set the locale for all categories to the user's default setting"
+# This is needed due to different conventions for decimal and thousand 
+# separators. It is assumed that the bank's csv file uses the same locale
+# as you have on your computer. 
+locale.setlocale(locale.LC_ALL, '')
+
 # Specified by YNAB4
 csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 
@@ -16,32 +28,24 @@ csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 # with the master category, followed by a colon, then the sub category.  
 # For example: 
 # Everyday Expenses: Groceries
-YnabEntry = namedtuple('YnabEntry', 'date payee category memo outflow inflow')
-BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance')
-
-#TODO:
-# 2. create a dict mapping common companies in the 'trasaction' field to ynab payees
-# 3. User dialog window asking what the payee should be when no payee was found. and add to dict
+# 
+# Payee and category are currently always set to emrty string
+YnabEntry = namedtuple('YnabEntry', ' '.join(csvHeader).lower())
+BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance') 
 
 
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
 
+def parseRow(bankline: BankEntry) -> YnabEntry:
 
-# arg should be a BankEntry
-def parseRow(bankline):
-    # For my bank's csv-files I need ',' for decimal separator
-    # and '.' for thousand separator
-    loc = locale.getlocale()
-    locale.setlocale(locale.LC_NUMERIC, 'Italian_Italy.1252') 
-    
     if type(bankline) is not BankEntry: 
         raise TypeError('{0} is not a line from the bank\'s csv-file'
                         .format(bankline))
     if not bankline.amount: 
         raise ValueError('A transaction must have an amount')
 
-    amount = locale.atof(bankline.amount)
+    amount = parseAmount(bankline.amount)
     if abs(amount) < 0.01: 
         raise ValueError('A transaction must be >= 0.01' 
                          'units in the currency used')
@@ -49,15 +53,34 @@ def parseRow(bankline):
     bankInflow  = abs(amount) if amount > 0 else ''
     bankOutflow = abs(amount) if amount < 0 else ''
 
-    date = datetime.strptime(bankline.date, '%Y-%m-%d') #covert to date
+    date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
     dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
-
-    # Restore previous locale
-    locale.setlocale(locale.LC_ALL, loc) 
 
     return YnabEntry(date=dateStr, payee= '', category='', 
                      memo=bankline.memo, outflow=bankOutflow, 
                      inflow = bankInflow) 
+
+
+# locale.atof() uses LC_NUMERIC to determine separating characters, but in
+# my locale and csv file, these differ from the separators for monetary values. 
+def parseAmount(amount: str) -> float:
+    conv = locale.localeconv()
+    amount = amount.replace(conv['mon_thousands_sep'], conv['thousands_sep'])
+    amount = amount.replace(conv['mon_decimal_point'], conv['decimal_point'])
+    return locale.atof(amount)
+
+
+def parseRows(bankRows: [BankEntry]) -> [YnabEntry]:
+    parsedRows = [] 
+    for row in bankRows:
+        try:
+            parsedRows.append(parseRow(row))
+        except (ValueError, TypeError) as e:
+            msg ='\n\t{0}\n\tError: {1}'.format(row,e)
+            warnings.warn(badFormatWarn(msg), RuntimeWarning)
+    print('{0}/{1} line(s) successfully parsed '
+          .format(len(parsedRows), len(bankRows)))
+    return parsedRows
 
 
 def readInput(inputPath):
@@ -97,25 +120,13 @@ def readInput(inputPath):
     return readRows
 
 
-def parseRows(bankRows):
-    parsedRows = [] 
-    for row in bankRows:
-        try:
-            parsedRows.append(parseRow(row))
-        except (ValueError, TypeError) as e:
-            msg ='\n\t{0}\n\tError: {1}'.format(row,e)
-            warnings.warn(badFormatWarn(msg), RuntimeWarning)
-    print('{0}/{1} line(s) successfully parsed '
-          .format(len(parsedRows), len(bankRows)))
-    return parsedRows
-
-
 def readIgnore():
     accounts = []
     with open('accignore.txt', encoding='utf-8', newline='') as ignored:
         for account in ignored:
             accounts.append(account)
     return accounts
+
 
 def writeOutput(parsedRows):
     with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
@@ -155,7 +166,7 @@ try:
     bankData = readInput(inputPath)
     parsed = parseRows(bankData)
     writeOutput(parsed)
-    input("Press any key to exit...")
+    input("Press Return to exit...")
 except (IOError, NameError, OSError) as e:
     print('Failed to locate input file: {0}'.format(e))  
     sys.exit()  
