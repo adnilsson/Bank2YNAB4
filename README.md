@@ -1,2 +1,2 @@
 # Bank2YNAB
-Converts from my bank's CSV format of exported transactions to the frormat accepted by YNAB4
+Converts from Nordea (SE) transaction exported as CSV to the frormat accepted by YNAB4
