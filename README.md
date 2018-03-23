@@ -5,10 +5,11 @@ Converts from bank transactions exported as CSV to the frormat accepted by YNAB4
 
 Besides the whole UX aspect, YNAB4 was great for two reasons.
 1. One-time cost. 
-2. Data stored locally, with Dropbox option.
+2. Data stored locally, with the option of uploading to Dropbox.
+
 The new, web-based YNAB follows a monthly supscription model.
 Paying $7 to make my monthly budged just does not make sense to me. 
-And I don't want to be forced to store all my bank data in their servers.
+Also, I don't want to be forced to store all my bank data in their servers.
 
 ## Installation
 
