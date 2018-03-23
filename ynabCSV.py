@@ -8,11 +8,15 @@ import warnings
 
 #TODO:
 # 1. create a mapping from  companies in the 'trasaction' field to ynab payees
-# 2. User dialog window asking what the payee should be when no payee was found. and add to mapping
+# 2. User dialog window asking what the payee should be when no payee was found, and add to mapping
 
 
 # Specified by YNAB4
-csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
+YNABHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
+
+# Bank Header. 
+NordeaHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
+IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
 
 # ------- On YnabEntry -------
 # Categories will only import if the category already exists in your budget 
@@ -23,9 +27,13 @@ csvHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 # Everyday Expenses: Groceries
 # 
 # Payee and category are currently always set to emrty string
-YnabEntry = namedtuple('YnabEntry', ' '.join(csvHeader).lower())
-BankEntry = namedtuple('BankEntry', 'date transaction memo amount balance') 
+YnabEntry   = namedtuple('YnabEntry', ' '.join(YNABHeader).lower())
 
+NordeaEntry = namedtuple('NordeaEntry', ' '.join(NordeaHeader).lower()) 
+IcaEntry    = namedtuple('IcaEntry', ' '.join(IcaHeader).lower())
+
+BankEntry = IcaEntry    # Change to the namedtuple that represents your bank's csv header
+csvDelimiter = ';'      # set the delimiter used when parsing the csv file
 
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
@@ -33,10 +41,11 @@ def namedtupleLen(tupleArg):
 def parseRow(bankline: BankEntry) -> YnabEntry:
 
     if type(bankline) is not BankEntry: 
-        raise TypeError('{0} is not a line from the bank\'s csv-file'
-                        .format(bankline))
+        raise TypeError(f'{bankline} is not a line from the bank\'s csv-file')
     if not bankline.amount: 
         raise ValueError('A transaction must have an amount')
+    if not bankline.date: 
+        raise ValueError('A transaction must have a date')
 
     strAmount = bankline.amount.strip()
     amountSign = '-' if strAmount[0] == '-' else '+'
@@ -47,9 +56,11 @@ def parseRow(bankline: BankEntry) -> YnabEntry:
     date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
     dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
 
-    return YnabEntry(date=dateStr, payee= '', category='', 
+    payee = '' if not bankline.payee else bankline.payee
+
+    return YnabEntry(date=dateStr, payee= payee, category='', 
                      memo=bankline.memo, outflow=bankOutflow, 
-                     inflow = bankInflow) 
+                     inflow = bankInflow)
 
 
 def parseRows(bankRows: [BankEntry]) -> [YnabEntry]:
@@ -58,10 +69,11 @@ def parseRows(bankRows: [BankEntry]) -> [YnabEntry]:
         try:
             parsedRows.append(parseRow(row))
         except (ValueError, TypeError) as e:
-            msg ='\n\t{0}\n\tError: {1}'.format(row,e)
+            msg = f'\n\t{row}\n\tError: {e}'
             warnings.warn(badFormatWarn(msg), RuntimeWarning)
-    print('{0}/{1} line(s) successfully parsed '
-          .format(len(parsedRows), len(bankRows)))
+
+    print(f'{len(parsedRows)}/{len(bankRows)} line(s) successfully parsed ')
+
     return parsedRows
 
 
@@ -72,14 +84,16 @@ def readInput(inputPath):
     ignoredRows = []
 
     with open(inputPath, encoding='utf-8', newline='')  as inputFile:
-        reader = csv.reader(inputFile)
+        reader = csv.reader(inputFile, delimiter=csvDelimiter)
         try:
             for row in reader:
                 if reader.line_num == 1: # Skip first row (header)
                     continue
 
                 if (row and len(row) != namedtupleLen(BankEntry)):
-                    warnings.warn(badFormatWarn(row), RuntimeWarning)
+                    msg = f' expected row length {namedtupleLen(BankEntry)},' \
+                            f' but got {row}'
+                    warnings.warn(badFormatWarn(msg), RuntimeWarning)
                 elif row:
                     bankRow = BankEntry._make(row)
                     for i in toIgnore:
@@ -89,11 +103,11 @@ def readInput(inputPath):
                             ignoredRows.append(bankRow)
                 else:
                     warnings.warn(
-                        '\n\tSkipping row {0}: {1}'
-                        .format(reader.line_num, row), RuntimeWarning)
+                        f'\n\tSkipping row {reader.line_num}: {row}', 
+                        RuntimeWarning)
                     emptyRows += 1
         except csv.Error as e:
-            sys.exit('file %s\n line %s: %s' % (inputFile, row, e))    
+            sys.exit(f'file {inputFile}\n line {row}: {e}')    
         else: 
             print('{0}/{1} line(s) successfully read '
                   '(ignored {2} blank line(s) and '
@@ -114,13 +128,13 @@ def writeOutput(parsedRows):
     with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
         writer = csv.writer(outputFile)
         try:
-            writer.writerow(csvHeader)
+            writer.writerow(YNABHeader)
             writer.writerows(parsedRows)
         except (ValueError, TypeError) as e:
-            msg ='{0}\n\tError: {1}'.format(row,e)
+            msg =f'{row}\n\tError: {e}'
             warnings.warn(badFormatWarn(msg), RuntimeWarning)
         except csv.Error as e:
-            sys.exit('file %s, line %d: %s' % (outputFile, writer.line_num, e)) 
+            sys.exit(f'File {outputFile}, line {writer.line_num}: {e}')
 
 
 def getFile():
@@ -132,17 +146,16 @@ def getFile():
     if inputPath:
         return inputPath
     else: 
-        raise OSError('Invalid file path')   
+        raise OSError('Invalid file path: {inputPath}\n')   
 
 
 def badFormatWarn(entry):
-    return '\n\tIncorrectly formated row:{0}\n\t Skipping...'.format(entry)
+    return f'\n\tIncorrectly formated row:{entry}\n\t Skipping...'
 
 
 Tk().withdraw() # keep the root window from appearing        
 
 # Attempt to parse input file to a YNAB-formatted csv file
-
 try:
     inputPath = getFile()
     bankData = readInput(inputPath)
@@ -150,5 +163,5 @@ try:
     writeOutput(parsed)
     input("Press Return to exit...")
 except (IOError, NameError, OSError) as e:
-    print('Failed to locate input file: {0}'.format(e))  
+    print(f'Failed to locate input file: {e}')  
     sys.exit()  
