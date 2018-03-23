@@ -9,6 +9,7 @@ import warnings
 #TODO:
 # 1. create a mapping from  companies in the 'trasaction' field to ynab payees
 # 2. User dialog window asking what the payee should be when no payee was found, and add to mapping
+# 3. Dynamically change banks (config file or dialog)
 
 
 # Specified by YNAB4
@@ -34,6 +35,7 @@ IcaEntry    = namedtuple('IcaEntry', ' '.join(IcaHeader).lower())
 
 BankEntry = IcaEntry    # Change to the namedtuple that represents your bank's csv header
 csvDelimiter = ';'      # set the delimiter used when parsing the csv file
+
 
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
@@ -153,15 +155,17 @@ def badFormatWarn(entry):
     return f'\n\tIncorrectly formated row:{entry}\n\t Skipping...'
 
 
-Tk().withdraw() # keep the root window from appearing        
+if __name__ == "__main__":
 
-# Attempt to parse input file to a YNAB-formatted csv file
-try:
-    inputPath = getFile()
-    bankData = readInput(inputPath)
-    parsed = parseRows(bankData)
-    writeOutput(parsed)
-    input("Press Return to exit...")
-except (IOError, NameError, OSError) as e:
-    print(f'Failed to locate input file: {e}')  
-    sys.exit()  
+    Tk().withdraw() # keep the root window from appearing        
+
+    # Attempt to parse input file to a YNAB-formatted csv file
+    try:
+        inputPath = getFile()
+        bankData = readInput(inputPath)
+        parsed = parseRows(bankData)
+        writeOutput(parsed)
+        input("Press Return to exit...")
+    except (IOError, NameError, OSError) as e:
+        print(f'Failed to locate input file: {e}')  
+        sys.exit()  
