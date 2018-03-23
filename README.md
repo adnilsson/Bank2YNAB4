@@ -1,7 +1,7 @@
-# Bank2YNAB
+# Bank2YNAB4
 Converts from bank transactions exported as CSV to the frormat accepted by YNAB4.
 
-# Why YNAB4?
+## Why YNAB4?
 
 Besides the whole UX aspect, YNAB4 was great for two reasons.
 1. One-time cost. 
@@ -32,7 +32,7 @@ You might have to make two changes to `ynabCSV.py` prior to running the script:
 5. From the dialog, find and select the CSV file from the bank.
 6. The converted CSV file is written to `ynabImport.csv` in the same directoy as `ynabCSV.py`.
 
-# Supported banks
+## Supported banks
 
 * Nordea [SE]
 * ICA Banken [SE]
