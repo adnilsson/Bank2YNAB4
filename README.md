@@ -30,8 +30,8 @@ You might have to make two changes to `ynabCSV.py` prior to running the script:
     ``` 
 
 2. Change the `csvDelimiter` accordingly.
- 1. Nordea uses `,`
- 2. ICA Banken uses `;`
+    1. Nordea uses `,`
+    2. ICA Banken uses `;`
 3. Save changes if any were made.
 
 Then, using the script is straightforward:
