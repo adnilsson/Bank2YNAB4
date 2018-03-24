@@ -8,7 +8,7 @@ Besides the whole UX aspect, YNAB4 was great for two reasons.
 2. Data stored locally, with the option of uploading to Dropbox.
 
 The new, web-based YNAB follows a monthly supscription model.
-Paying $7 to make my monthly budged just does not make sense to me. 
+Paying $7 to make my monthly budget just does not make sense for me. 
 Also, I don't want to be forced to store all my bank data in their servers.
 
 ## Installation
