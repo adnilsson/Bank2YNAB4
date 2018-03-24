@@ -33,8 +33,8 @@ YnabEntry   = namedtuple('YnabEntry', ' '.join(YNABHeader).lower())
 NordeaEntry = namedtuple('NordeaEntry', ' '.join(NordeaHeader).lower()) 
 IcaEntry    = namedtuple('IcaEntry', ' '.join(IcaHeader).lower())
 
-BankEntry = IcaEntry    # Change to the namedtuple that represents your bank's csv header
-csvDelimiter = ';'      # set the delimiter used when parsing the csv file
+BankEntry = NordeaEntry    # Change to the namedtuple that represents your bank's csv header
+csvDelimiter = ','      # set the delimiter used when parsing the csv file
 
 
 def namedtupleLen(tupleArg):
@@ -58,9 +58,13 @@ def parseRow(bankline: BankEntry) -> YnabEntry:
     date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
     dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
 
-    payee = '' if not bankline.payee else bankline.payee
+    # payee is not a mandatory field; set only if it exists
+    try:
+        payee = bankline.payee
+    except Exception as e:
+        payee = ''
 
-    return YnabEntry(date=dateStr, payee= payee, category='', 
+    return YnabEntry(date=dateStr, payee=payee, category='', 
                      memo=bankline.memo, outflow=bankOutflow, 
                      inflow = bankInflow)
 
