@@ -5,6 +5,7 @@ from tkinter.filedialog import askopenfilename
 import locale
 import csv
 import warnings
+from sys import exit
 
 #TODO:
 # 1. create a mapping from  companies in the 'trasaction' field to ynab payees
@@ -102,18 +103,19 @@ def readInput(inputPath):
                     warnings.warn(badFormatWarn(msg), RuntimeWarning)
                 elif row:
                     bankRow = BankEntry._make(row)
+                    readRows.append(bankRow)
+
                     for i in toIgnore:
-                        if i not in bankRow.transaction:
-                            readRows.append(bankRow)
-                        else:
+                        if i in bankRow.transaction:
+                            readRows.pop()
                             ignoredRows.append(bankRow)
                 else:
-                    warnings.warn(
-                        f'\n\tSkipping row {reader.line_num}: {row}', 
-                        RuntimeWarning)
+                    #warnings.warn(
+                    #   f'\n\tSkipping row {reader.line_num}: {row}', 
+                    #   RuntimeWarning)
                     emptyRows += 1
         except csv.Error as e:
-            sys.exit(f'file {inputFile}\n line {row}: {e}')    
+            exit(f'file {inputFile}\n line {row}: {e}')
         else: 
             print('{0}/{1} line(s) successfully read '
                   '(ignored {2} blank line(s) and '
@@ -124,9 +126,14 @@ def readInput(inputPath):
 
 def readIgnore():
     accounts = []
-    with open('accignore.txt', encoding='utf-8', newline='') as ignored:
-        for account in ignored:
-            accounts.append(account)
+    try:
+        with open('accignore.txt', encoding='utf-8', newline='') as ignored:
+            for account in ignored:
+                accounts.append(account)
+        msg = f'Ignoring transactions from account(s): {accounts}'
+    except OSError:
+        msg = 'Parsing all transactions...'
+    print(msg)
     return accounts
 
 
@@ -140,7 +147,7 @@ def writeOutput(parsedRows):
             msg =f'{row}\n\tError: {e}'
             warnings.warn(badFormatWarn(msg), RuntimeWarning)
         except csv.Error as e:
-            sys.exit(f'File {outputFile}, line {writer.line_num}: {e}')
+            exit(f'File {outputFile}, line {writer.line_num}: {e}')
 
 
 def getFile():
@@ -152,7 +159,7 @@ def getFile():
     if inputPath:
         return inputPath
     else: 
-        raise OSError('Invalid file path: {inputPath}\n')   
+        raise OSError(f'Invalid file path: {inputPath}\n')
 
 
 def badFormatWarn(entry):
@@ -172,4 +179,4 @@ if __name__ == "__main__":
         input("Press Return to exit...")
     except (IOError, NameError, OSError) as e:
         print(f'Failed to locate input file: {e}')  
-        sys.exit()  
+        exit()
