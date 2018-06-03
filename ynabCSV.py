@@ -4,6 +4,7 @@ from tkinter.filedialog import askopenfilename
 import locale
 import csv
 import warnings
+from sys import exit
 
 #TODO:
 # 1. create a mapping from  companies in the 'trasaction' field to ynab payees
@@ -144,9 +145,14 @@ def namedtupleLen(tupleArg):
 
 def readIgnore():
     accounts = []
-    with open('accignore.txt', encoding='utf-8', newline='') as ignored:
-        for account in ignored:
-            accounts.append(account)
+    try:
+        with open('accignore.txt', encoding='utf-8', newline='') as ignored:
+            for account in ignored:
+                accounts.append(account)
+        msg = f'Ignoring transactions from account(s): {accounts}'
+    except OSError:
+        msg = 'Parsing all transactions...'
+    print(msg)
     return accounts
 
 
@@ -159,7 +165,7 @@ def getFile():
     if inputPath:
         return inputPath
     else: 
-        raise OSError('Invalid file path.')   
+        raise OSError('Invalid file path.')
 
 
 def badFormatWarn(entry):
@@ -182,3 +188,4 @@ def main(bank, root):
         root.destroy()
     except (IOError, NameError, OSError) as e:
         print(f'Error: {e}') 
+
