@@ -45,10 +45,10 @@ class Application(Frame):
         self.confirm = Button(self, text="Ok", command=self.convert)
         self.confirm.grid(column=0, row=1, columnspan=2, sticky='E', pady=5)
 
-
     def convert(self):
-        main(banks[toKey(self.bankName.get())], self.master)
-        
+        empry, ignored, read = main(banks[toKey(self.bankName.get())], self.master)
+
+        self.master.destroy()
 
     def getNames(self, banks):
         names = []

@@ -31,6 +31,11 @@ class Converter:
         self.BankEntry = namedtuple('BankEntry', ' '.join(bankHeader).lower()) 
         self.csvDelimiter = delimiter
 
+        self.ignoredRows   = []
+        self.readRows      = []
+        self.parsedRows    = []
+        self.numEmptyRows  = 0
+
 
     def convert(self, inputPath, toIgnore=[]):
         if not inputPath:
@@ -39,16 +44,11 @@ class Converter:
         # Attempt to parse input file to a YNAB-formatted csv file
         # May raise OSError 
         bankData = self.readInput(inputPath, toIgnore)
-        parsed = self.parseRows(bankData)
+        parsed   = self.parseRows(bankData)
         self.writeOutput(parsed)
 
 
     def readInput(self, inputPath, toIgnore):
-        readRows = []
-        #toIgnore = readIgnore()
-        emptyRows = 0
-        ignoredRows = []
-        
         with open(inputPath, encoding='utf-8', newline='')  as inputFile:
             reader = csv.reader(inputFile, delimiter=self.csvDelimiter)
             try:
@@ -64,37 +64,36 @@ class Converter:
                         bankRow = self.BankEntry._make(row)
                         for i in toIgnore:
                             if i not in bankRow.transaction:
-                                readRows.append(bankRow)
+                                self.readRows.append(bankRow)
                             else:
-                                ignoredRows.append(bankRow)
+                                self.ignoredRows.append(bankRow)
                     else:
                         warnings.warn(
                             f'\n\tSkipping row {reader.line_num}: {row}', 
                             RuntimeWarning)
-                        emptyRows += 1
+                        self.numEmptyRows += 1
             except csv.Error as e:
                 raise OSError(f'file {inputFile}\n line {row}: {e}')    
             else: 
                 print('{0}/{1} line(s) successfully read '
                       '(ignored {2} blank line(s) and '
                        '{3} transactions found in accignore).'
-                      .format(len(readRows), reader.line_num-1, emptyRows, len(ignoredRows)))
-        
-        return readRows
+                      .format(len(self.readRows), reader.line_num-1, self.numEmptyRows, len(self.ignoredRows)))
+
+        return self.readRows
 
 
     def parseRows(self, bankRows):
-        parsedRows = [] 
         for row in bankRows:
             try:
-                parsedRows.append(self.parseRow(row))
+                self.parsedRows.append(self.parseRow(row))
             except (ValueError, TypeError) as e:
                 msg = f'\n\t{row}\n\tError: {e}'
                 warnings.warn(badFormatWarn(msg), RuntimeWarning)
 
-        print(f'{len(parsedRows)}/{len(bankRows)} line(s) successfully parsed ')
+        print(f'{len(self.parsedRows)}/{len(bankRows)} line(s) successfully parsed ')
 
-        return parsedRows
+        return bankRows
 
 
     def parseRow(self, bankline):
@@ -117,7 +116,7 @@ class Converter:
         # payee is not a mandatory field; set only if it exists
         try:
             payee = bankline.payee
-        except Exception as e:
+        except AttributeError as e:
             payee = ''
 
         return self.YnabEntry(date=dateStr, payee=payee, category='', 
@@ -133,8 +132,8 @@ class Converter:
                 writer.writerows(parsedRows)
                 print('YNAB csv-file successfully written.')
             except (ValueError, TypeError) as e:
-                msg =f'{row}\n\tError: {e}'
-                warnings.warn(badFormatWarn(msg), RuntimeWarning)
+                msg =f'Failed to write YNAB csv-file: {e}'
+                warnings.warn(msg, RuntimeWarning)
             except csv.Error as e:
                 raise OSError(f'File {outputFile}, line {writer.line_num}: {e}')
 
@@ -185,7 +184,8 @@ def main(bank, root):
     try:
         inputPath = getFile()
         Bank2Ynab.convert(inputPath, ignoredAccounts)
-        root.destroy()
+        return (Bank2Ynab.numEmptyRows, len(Bank2Ynab.ignoredRows), 
+            len(Bank2Ynab.readRows))
     except (IOError, NameError, OSError) as e:
         print(f'Error: {e}') 
 
