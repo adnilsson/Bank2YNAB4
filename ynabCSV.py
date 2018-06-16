@@ -45,7 +45,8 @@ class Converter:
         # May raise OSError 
         bankData = self.readInput(inputPath, toIgnore)
         parsed   = self.parseRows(bankData)
-        self.writeOutput(parsed)
+
+        return self.writeOutput(parsed)
 
 
     def readInput(self, inputPath, toIgnore):
@@ -125,17 +126,25 @@ class Converter:
 
 
     def writeOutput(self, parsedRows):
+        hasWritten = False
+
+        if(parsedRows == None or len(parsedRows) == 0):
+            return hasWritten
+
         with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
             writer = csv.writer(outputFile)
             try:
                 writer.writerow(self.YNABHeader)
                 writer.writerows(parsedRows)
+                hasWritten = True
                 print('YNAB csv-file successfully written.')
             except (ValueError, TypeError) as e:
                 msg =f'Failed to write YNAB csv-file: {e}'
                 warnings.warn(msg, RuntimeWarning)
             except csv.Error as e:
                 raise OSError(f'File {outputFile}, line {writer.line_num}: {e}')
+            finally:
+                return hasWritten
 
 
 def namedtupleLen(tupleArg):
@@ -181,11 +190,12 @@ def main(bank, root):
     except OSError:
         ignoredAccounts = []
 
+    # Do the conversion: 
+    # fetch file, attempt parsing, write output, and return results.
     try:
         inputPath = getFile()
-        Bank2Ynab.convert(inputPath, ignoredAccounts)
-        return (Bank2Ynab.numEmptyRows, len(Bank2Ynab.ignoredRows), 
-            len(Bank2Ynab.readRows))
+        hasConverted = Bank2Ynab.convert(inputPath, ignoredAccounts)
+        return (hasConverted, Bank2Ynab.numEmptyRows, len(Bank2Ynab.ignoredRows), 
+            len(Bank2Ynab.readRows), len(Bank2Ynab.parsedRows))
     except (IOError, NameError, OSError) as e:
         print(f'Error: {e}') 
-
