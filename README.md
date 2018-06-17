@@ -40,13 +40,13 @@ The supported banks are defined in `banks.py`.
 Each bank is defined by its name, csv-header, and csv-delimiter.
 Defining a new bank should be quite clear from the existing entries, nevertheless a short description is in due place:
 1. Define the new bank's csv-header as a list. 
-   * Fields `'Date'` and `'Amount'` **must** exist in the header for the script to function.
+   * Fields `'Date'`, `'Amount'`, `Transaction` and `Memo` **must** exist in the header for the script to function.
 2. Create a new `Bank` tuple that specifies bank name, csv-header, and csv-delimiter.
-3. Add the newly created `Bank` tuple to the dictionary of banks. Keys are genereated by calling `toKey` with the bank name as argument.
+3. Add the newly created `Bank` tuple to the dictionary of banks. Keys are genereated by calling `toKey` with the bank name as  argument.
 
 Full example:
 ```python
-NewBankHeader = ['Date', 'Payee', 'Memo', 'Amount', 'Balance']
+NewBankHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
 NewBank = Bank('NewBank', NewBankHeader, ',') # This bank uses comma as its delimiter
 banks[toKey(NewBank.name)] = NewBank
 ```
