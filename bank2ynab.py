@@ -1,37 +1,14 @@
 from tkinter import Tk, StringVar, Toplevel, Message
 from tkinter.ttk import Combobox, Frame, Button, Label
 from tkinter.filedialog import askopenfilename
-from collections import namedtuple
-from ynabCSV import bank2ynab
-
+from converter import bank2ynab
+from banks import banks, toKey
 
 PADX = 12
 PADY = 10
 
-Bank = namedtuple('Bank', ['name', 'header', 'delimiter'])
-banks = dict()
-
-def toKey(name : str) -> str:
-    key = [c for c in name if c.isalpha()]
-    key = ''.join(key)
-    return key.lower()
-
-"""
-Banks' header configurations.
-Stored in a dictionary where the keys are bank names 
-in lowercase and only alpha-characters.
-"""
-NordeaHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
-Nordea = Bank('Nordea', NordeaHeader, delimiter=',')
-banks[toKey(Nordea.name)] = Nordea
-
-IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
-Ica = Bank('ICA Banken', IcaHeader, delimiter=';')
-banks[toKey(Ica.name)] = Ica
-
-
 ###################################
-#          GUI-code below
+#           GUI-code
 ###################################
 
 class Application(Tk):
