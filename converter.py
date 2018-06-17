@@ -82,6 +82,14 @@ class Converter:
 
         return self.readRows
 
+
+    def readOptionalField(self, lambdaFun, alt=''):
+        try:
+            res = lambdaFun()
+        except AttributeError:
+            res = alt
+        return res
+
     def parseRows(self, bankRows):
         for row in bankRows:
             try:
@@ -92,7 +100,7 @@ class Converter:
 
         print(f'{len(self.parsedRows)}/{len(bankRows)} line(s) successfully parsed ')
 
-        return bankRows
+        return self.parsedRows
 
     def parseRow(self, bankline):
         if type(bankline) is not self.BankEntry: 
@@ -103,15 +111,8 @@ class Converter:
             raise ValueError('A transaction must have a date')
 
         # payee and memo are not a mandatory fields; set only if they exist
-        try:
-            payee = bankline.payee
-        except AttributeError as e:
-            payee = ''
-
-        try:
-            memo = bankline.memo
-        except AttributeError as e:
-            memo = ''
+        payee = self.readOptionalField(lambda: bankline.payee, bankline.transaction)
+        memo  = self.readOptionalField(lambda: bankline.memo)
 
         strAmount = bankline.amount.strip()
         amountSign = '-' if strAmount[0] == '-' else '+'
