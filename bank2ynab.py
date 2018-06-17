@@ -1,8 +1,12 @@
-from tkinter import Tk, StringVar
-from tkinter.ttk import Combobox, Frame, Label, Button
+from tkinter import Tk, StringVar, Toplevel, Message
+from tkinter.ttk import Combobox, Frame, Button, Label
+from tkinter.filedialog import askopenfilename
 from collections import namedtuple
-from ynabCSV import main
+from ynabCSV import bank2ynab
 
+
+PADX = 12
+PADY = 10
 
 Bank = namedtuple('Bank', ['name', 'header', 'delimiter'])
 banks = dict()
@@ -12,7 +16,11 @@ def toKey(name : str) -> str:
     key = ''.join(key)
     return key.lower()
 
-
+"""
+Banks' header configurations.
+Stored in a dictionary where the keys are bank names 
+in lowercase and only alpha-characters.
+"""
 NordeaHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
 Nordea = Bank('Nordea', NordeaHeader, delimiter=',')
 banks[toKey(Nordea.name)] = Nordea
@@ -21,6 +29,10 @@ IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
 Ica = Bank('ICA Banken', IcaHeader, delimiter=';')
 banks[toKey(Ica.name)] = Ica
 
+
+###################################
+#          GUI-code below
+###################################
 
 class Application(Tk):
     """
@@ -39,7 +51,7 @@ class Application(Tk):
             self._frame.destroy()
         self._frame = new_frame
         
-        self._frame.grid(padx=12, pady=10)
+        self._frame.grid(padx=PADX, pady=PADY)
         self._frame.master.title("Bank2YNAB4")
         self._frame.master.resizable(False, False)
 
@@ -47,7 +59,6 @@ class Application(Tk):
 class BankSelection(Frame):
     def __init__(self, master=None, args=None):
         Frame.__init__(self, master)
-
         self.createWidgets()
 
     def createWidgets(self):
@@ -66,8 +77,17 @@ class BankSelection(Frame):
         self.confirm.grid(column=0, row=1, columnspan=2, sticky='E', pady=5)
 
     def convert(self):
-        args = main(banks[toKey(self.bankName.get())], self.master)
-        self.master.switch_frame(Report, args)
+        try:
+            inputPath = self.getFile()
+            bank = banks[toKey(self.bankName.get())]
+        except ValueError as e:
+            pass # No file selected
+        else:
+            try:
+                result = bank2ynab(bank, inputPath)
+                self.master.switch_frame(Report, result)
+            except (NameError, OSError, ValueError, TypeError) as e:
+                Error(self, e)
 
     def getNames(self, banks):
         names = []
@@ -78,18 +98,35 @@ class BankSelection(Frame):
         names.sort()
         return tuple(names)
 
+    def getFile(self):
+        inputPath = askopenfilename(
+                    filetypes=[('CSV files', '*.csv')],
+                    initialdir='.')
+        if inputPath:
+            return inputPath
+        else: 
+            raise ValueError('No file selected')
+
 
 class Report(Frame):
     def __init__(self, master, args):
         Frame.__init__(self, master)
+
+        self.createLabels(args)
+
+        self.exitButton = Button(self, text="Exit", command=self.master.destroy)
+        self.exitButton.grid(column=0, row=4, sticky='E')
+
+    def createLabels(self, args):
         success, blankRows, ignoredRows, linesRead, rowsParsed= args
 
-        readStats = '{0}/{1} lines read ' \
-            '(ignored {0} blank lines and ' \
-            '{1} transactions found in accignore).'
-        readStats = readStats.format(linesRead, linesRead+blankRows+ignoredRows, blankRows, ignoredRows)
+        readStats = f'{linesRead}/{linesRead+blankRows+ignoredRows} rows read'
+        if(blankRows+ignoredRows != 0):
+            ignoreStats = f' (ignored {blankRows} blank rows and ' \
+                    f'{ignoredRows} transactions found in accignore).'
+            readStats = readStats + ignoreStats
 
-        parsedStats = f'{rowsParsed}/{linesRead} lines parsed '
+        parsedStats = f'{rowsParsed}/{linesRead} rows parsed '
 
         if not success:
             self.status = "Conversion failed."
@@ -105,9 +142,21 @@ class Report(Frame):
         self.parsedStatsLabel = Label(self, text=parsedStats)
         self.parsedStatsLabel.grid(column=0, row=3, sticky='W')
 
-        self.exitButton = Button(self, text="Exit", command=self.master.destroy)
-        self.exitButton.grid(column=0, row=4, sticky='E')
+
+class Error(Toplevel):
+    """Pop-up for displaying an error message"""
+    def __init__(self, master, arg):
+        Toplevel.__init__(self, master, padx=PADX, pady=PADY)
+        self.title("Error")
+
+        self.msg = Message(self, text=arg, aspect=380)
+        self.msg.grid(column=0, row=0,  pady=5)
+        self.columnconfigure(0, minsize=180)
+
+        button = Button(self, text="Dismiss", command=self.destroy)
+        button.grid(column=0, row=1)
 
 
-app = Application()
-app.mainloop()
+if __name__ == "__main__":
+    app = Application()
+    app.mainloop()

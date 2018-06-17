@@ -1,6 +1,5 @@
 from datetime import datetime
 from collections import namedtuple
-from tkinter.filedialog import askopenfilename
 import locale
 import csv
 import warnings
@@ -112,7 +111,7 @@ class Converter:
         bankOutflow = strAmount[1::] if amountSign == '-' else ''
 
         date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
-        dateStr = date.strftime('%Y/%m/%d')    #get string in the desired format
+        dateStr = date.strftime('%Y/%m/%d')    # desired format
 
         # payee is not a mandatory field; set only if it exists
         try:
@@ -138,9 +137,6 @@ class Converter:
                 writer.writerows(parsedRows)
                 hasWritten = True
                 print('YNAB csv-file successfully written.')
-            except (ValueError, TypeError) as e:
-                msg =f'Failed to write YNAB csv-file: {e}'
-                warnings.warn(msg, RuntimeWarning)
             except csv.Error as e:
                 raise OSError(f'File {outputFile}, line {writer.line_num}: {e}')
             finally:
@@ -164,24 +160,12 @@ def readIgnore():
     return accounts
 
 
-def getFile():
-    inputPath = askopenfilename(
-                filetypes=[('CSV files', '*.csv'),
-                           ('All files', '*'), # Used for debugging only
-                           ],
-                initialdir='.')
-    if inputPath:
-        return inputPath
-    else: 
-        raise OSError('Invalid file path.')
-
-
 def badFormatWarn(entry):
     return f'\n\tIncorrectly formated row:{entry}\n\t Skipping...'
 
 
-def main(bank, root):
-    Bank2Ynab = Converter(bank.header, bank.delimiter)
+def bank2ynab(bank, csvFilePath):
+    converter = Converter(bank.header, bank.delimiter)
 
     # Check for accignore.txt and obtain a list ofignored accounts. 
     # It's okay to not have it.
@@ -192,10 +176,6 @@ def main(bank, root):
 
     # Do the conversion: 
     # fetch file, attempt parsing, write output, and return results.
-    try:
-        inputPath = getFile()
-        hasConverted = Bank2Ynab.convert(inputPath, ignoredAccounts)
-        return (hasConverted, Bank2Ynab.numEmptyRows, len(Bank2Ynab.ignoredRows), 
-            len(Bank2Ynab.readRows), len(Bank2Ynab.parsedRows))
-    except (IOError, NameError, OSError) as e:
-        print(f'Error: {e}') 
+    hasConverted = converter.convert(csvFilePath, ignoredAccounts)
+    return (hasConverted, converter.numEmptyRows, len(converter.ignoredRows), 
+            len(converter.readRows), len(converter.parsedRows))
