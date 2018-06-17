@@ -102,6 +102,17 @@ class Converter:
         if not bankline.date: 
             raise ValueError('A transaction must have a date')
 
+        # payee and memo are not a mandatory fields; set only if they exist
+        try:
+            payee = bankline.payee
+        except AttributeError as e:
+            payee = ''
+
+        try:
+            memo = bankline.memo
+        except AttributeError as e:
+            memo = ''
+
         strAmount = bankline.amount.strip()
         amountSign = '-' if strAmount[0] == '-' else '+'
         
@@ -111,14 +122,8 @@ class Converter:
         date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
         dateStr = date.strftime('%Y/%m/%d')    # desired format
 
-        # payee is not a mandatory field; set only if it exists
-        try:
-            payee = bankline.payee
-        except AttributeError as e:
-            payee = ''
-
         return self.YnabEntry(date=dateStr, payee=payee, category='', 
-                         memo=bankline.memo, outflow=bankOutflow, 
+                         memo=memo, outflow=bankOutflow, 
                          inflow = bankInflow)
 
     def writeOutput(self, parsedRows):
