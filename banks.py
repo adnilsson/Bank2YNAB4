@@ -14,8 +14,15 @@ def toKey(name : str) -> str:
     key = ''.join(key)
     return key.lower()
 
-NordeaHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
-Nordea = Bank('Nordea', NordeaHeader, delimiter=',')
+NordeaOldHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
+NordeaOld = Bank('Nordea (gamla)', NordeaOldHeader, delimiter=',')
+banks[toKey(NordeaOld.name)] = NordeaOld
+
+# All information regarding the payee is in a different field called "Rubrik"
+# while "Betalningsmottagare" (i.e, "payee" in English) is empty.
+# This makes no sense, but that's the format they currently use.
+NordeaHeader = ['Date', 'Amount', "Sender" ,"TruePayee", "Name", "Payee", "Balance", "Currency"]
+Nordea = Bank('Nordea', NordeaHeader, delimiter=';')
 banks[toKey(Nordea.name)] = Nordea
 
 IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
