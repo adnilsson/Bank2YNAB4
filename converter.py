@@ -62,11 +62,14 @@ class Converter:
                         warnings.warn(badFormatWarn(msg), RuntimeWarning)
                     elif row:
                         bankRow = self.BankEntry._make(row)
-                        for i in toIgnore:
-                            if i not in bankRow.transaction:
+                        if 'payee' in bankRow._fields:
+                            for i in toIgnore:
+                                if i not in bankRow.payee:
+                                    self.readRows.append(bankRow)
+                                else:
+                                    self.ignoredRows.append(bankRow)
+                        else:
                                 self.readRows.append(bankRow)
-                            else:
-                                self.ignoredRows.append(bankRow)
                     else:
                         warnings.warn(
                             f'\n\tSkipping row {reader.line_num}: {row}', 
@@ -111,7 +114,7 @@ class Converter:
             raise ValueError('A transaction must have a date')
 
         # payee and memo are not a mandatory fields; set only if they exist
-        payee = self.readOptionalField(lambda: bankline.payee, bankline.transaction)
+        payee = self.readOptionalField(lambda: bankline.payee)
         memo  = self.readOptionalField(lambda: bankline.memo)
 
         strAmount = bankline.amount.strip()

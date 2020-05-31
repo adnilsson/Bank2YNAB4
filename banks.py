@@ -1,3 +1,9 @@
+""" Banks' header configurations.
+Stored in a dictionary where the keys are bank names in lowercase and
+only alpha-characters. A bank's header should include "date" and
+"amount", otherwise it cannot be parsed since YNAB requires these two
+fields.
+"""
 from collections import namedtuple
 
 Bank = namedtuple('Bank', ['name', 'header', 'delimiter'])
@@ -8,11 +14,6 @@ def toKey(name : str) -> str:
     key = ''.join(key)
     return key.lower()
 
-"""
-Banks' header configurations.
-Stored in a dictionary where the keys are bank names 
-in lowercase and only alpha-characters.
-"""
 NordeaHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
 Nordea = Bank('Nordea', NordeaHeader, delimiter=',')
 banks[toKey(Nordea.name)] = Nordea
