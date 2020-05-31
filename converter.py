@@ -6,30 +6,38 @@ import warnings
 from sys import exit
 
 #TODO:
-# 1. Make this file also function as a script. 
+# 1. Make this file also function as a script.
 #   - specify a bank and input path + call bank2ynab
 # 1. create a mapping from  companies in the 'trasaction' field to ynab payees
-# 2. User dialog window asking what the payee should be when no payee was found, and add to mapping
+# 2. User dialog window asking what the payee should be when no payee was found and
+#    save this to choice to file.
 
 
 # ------- On YnabEntry -------
-# Categories will only import if the category already exists in your budget 
-# file with the exact same name. Otherwise the categories will be ignored 
-# when importing the file. Also, make sure that the categories are listed 
-# with the master category, followed by a colon, then the sub category.  
-# For example: 
+# Categories will only import if the category already exists in your budget
+# file with the exact same name. Otherwise the categories will be ignored
+# when importing the file. Also, make sure that the categories are listed
+# with the master category, followed by a colon, then the sub category.
+# For example:
 # Everyday Expenses: Groceries
-# 
-# Payee and category are currently always set to emrty string
+#
+# Payee and category are currently always set to empty string
 
 
 class Converter:
+    __REQUIRED_HEADERS=('date', 'amount')
+
     def __init__(self, bankHeader, delimiter):
+        for required_header in self.__REQUIRED_HEADERS:
+            if required_header not in [bh.lower() for bh in bankHeader]:
+                raise ValueError(f"'{required_header}' is a required column, but"
+                     f" it's not in the bank's header:\n {bankHeader}")
+
         # Specified by YNAB4
         self.YNABHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
         self.YnabEntry  = namedtuple('YnabEntry', ' '.join(self.YNABHeader).lower())
 
-        self.BankEntry = namedtuple('BankEntry', ' '.join(bankHeader).lower()) 
+        self.BankEntry = namedtuple('BankEntry', ' '.join(bankHeader).lower())
         self.csvDelimiter = delimiter
 
         self.ignoredRows   = []
@@ -72,12 +80,12 @@ class Converter:
                                 self.readRows.append(bankRow)
                     else:
                         warnings.warn(
-                            f'\n\tSkipping row {reader.line_num}: {row}', 
+                            f'\n\tSkipping row {reader.line_num}: {row}',
                             RuntimeWarning)
                         self.numEmptyRows += 1
             except csv.Error as e:
-                raise OSError(f'file {inputFile}\n line {row}: {e}')    
-            else: 
+                raise OSError(f'file {inputFile}\n line {row}: {e}')
+            else:
                 print('{0}/{1} line(s) successfully read '
                       '(ignored {2} blank line(s) and '
                        '{3} transactions found in accignore).'
@@ -106,12 +114,8 @@ class Converter:
         return self.parsedRows
 
     def parseRow(self, bankline):
-        if type(bankline) is not self.BankEntry: 
+        if type(bankline) is not self.BankEntry:
             raise TypeError(f'{bankline} is not a line from the bank\'s csv-file')
-        if not bankline.amount: 
-            raise ValueError('A transaction must have an amount')
-        if not bankline.date: 
-            raise ValueError('A transaction must have a date')
 
         # payee and memo are not a mandatory fields; set only if they exist
         payee = self.readOptionalField(lambda: bankline.payee)
@@ -119,15 +123,15 @@ class Converter:
 
         strAmount = bankline.amount.strip()
         amountSign = '-' if strAmount[0] == '-' else '+'
-        
+
         bankInflow  = strAmount if amountSign == '+' else ''
         bankOutflow = strAmount[1::] if amountSign == '-' else ''
 
         date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
         dateStr = date.strftime('%Y/%m/%d')    # desired format
 
-        return self.YnabEntry(date=dateStr, payee=payee, category='', 
-                         memo=memo, outflow=bankOutflow, 
+        return self.YnabEntry(date=dateStr, payee=payee, category='',
+                         memo=memo, outflow=bankOutflow,
                          inflow = bankInflow)
 
     def writeOutput(self, parsedRows):
@@ -171,19 +175,18 @@ def badFormatWarn(entry):
 
 
 def bank2ynab(bank, csvFilePath):
-    """
-    Perform the conversion from a bank csv-file to YNAB's csv format.
+    """ Perform the conversion from a bank csv-file to YNAB's csv format
     """
     converter = Converter(bank.header, bank.delimiter)
 
-    # Check for accignore.txt and obtain a list ofignored accounts. 
+    # Check for accignore.txt and obtain a list ofignored accounts.
     try:
         ignoredAccounts = readIgnore()
     except OSError:
         ignoredAccounts = []    # It's okay to not have it.
 
-    # Do the conversion: 
+    # Do the conversion:
     # fetch file, attempt parsing, write output, and return results.
     hasConverted = converter.convert(csvFilePath, ignoredAccounts)
-    return (hasConverted, converter.numEmptyRows, len(converter.ignoredRows), 
+    return (hasConverted, converter.numEmptyRows, len(converter.ignoredRows),
             len(converter.readRows), len(converter.parsedRows))
