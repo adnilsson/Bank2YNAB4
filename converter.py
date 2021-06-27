@@ -1,15 +1,14 @@
 from datetime import datetime
 from collections import namedtuple
-import locale
 import csv
 import warnings
-from sys import exit
 
 #TODO:
-# 1. Make this file also function as a script.
+# * Support banks that have inflow/outflow instead of "amount" in their csv header
+# * Replace banks.py with a toml config + reader
+# * Make this file also function as a script.
 #   - specify a bank and input path + call bank2ynab
-# 1. create a mapping from  companies in the 'trasaction' field to ynab payees
-# 2. User dialog window asking what the payee should be when no payee was found and
+# * User dialog window asking what the payee should be when no payee was found and
 #    save this to choice to file.
 
 
