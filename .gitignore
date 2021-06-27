@@ -6,8 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
-# I do not feel like sharing my tranactions
+# I do not feel like sharing my tranactions...
 *.csv
+
+# ...except the ones eplicitly added as examples
+!tests/example_csv/*.csv
 
 # Distribution / packaging
 .Python
