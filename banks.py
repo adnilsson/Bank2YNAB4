@@ -28,3 +28,7 @@ banks[toKey(Nordea.name)] = Nordea
 IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
 Ica = Bank('ICA Banken', IcaHeader, delimiter=';')
 banks[toKey(Ica.name)] = Ica
+
+RevolutHeader = ['Date', 'Payee', 'Outflow', 'Inflow', 'Exchange Outflow', 'Exchange Inflow', 'Balance', 'Category', 'Memo']
+Revolut = Bank('Revolut', RevolutHeader, delimiter=',')
+banks[toKey(Revolut.name)] = Revolut

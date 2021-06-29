@@ -1,0 +1,7 @@
+Completed Date , Description , Paid Out (SEK) , Paid In (SEK) , Exchange Out, Exchange In, Balance (SEK), Category, Notes
+18 Jun 2021 , webshop.com  , 272.50 ,  ,  ,  , 604.32, Health,
+17 Jun 2021 , Paypal FX Rate kr 1 = £0.0852 , 84.46 ,  ,  GBP 7.20 ,  , 1,415.41, Shopping, note that does not have a column because the Balance amount is not in quotes
+17 Jun 2021 , Money added  ,  , "1,000.00" ,  ,  , 1,499.87, Transfers,
+7 Jun 2021 , Paypal FX Rate kr 1 = £0.0843 , 11.86 ,  ,  GBP 1.00 ,  , 499.87, Services,
+7 Jun 2021 , Refund  ,  , 11.73 ,  ,  , 511.73, Refund,
+5 Jun 2021 , Money added  ,  , 500.00 ,  ,  , 500.00, Transfers,

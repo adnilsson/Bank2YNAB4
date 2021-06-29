@@ -21,3 +21,10 @@ def test_nordea_v2(examples_dir):
     expect = (True, 0, 0, 4, 4)
     result = bank2ynab(banks['nordea'], csv_path)
     assert expect == result
+
+def test_revolut_sek(examples_dir):
+    csv_path = util.load_example('revolut_v1.csv', examples_dir)
+
+    expect = (True, 0, 0, 6, 6)
+    result = bank2ynab(banks['revolut'], csv_path)
+    assert expect == result
