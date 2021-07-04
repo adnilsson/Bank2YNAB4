@@ -20,7 +20,7 @@ banks[toKey(NordeaOld.name)] = NordeaOld
 
 # All information regarding the payee is in a different field called "Rubrik"
 # while "Betalningsmottagare" (i.e, "payee" in English) is empty.
-# This makes no sense, but that's the format they currently use.
+# This makes no sense, but that's how the format is.
 NordeaHeader = ['Date', 'Amount', "Sender" ,"TruePayee", "Name", "Payee", "Balance", "Currency"]
 Nordea = Bank('Nordea', NordeaHeader, delimiter=';', date_format='%Y-%m-%d')
 banks[toKey(Nordea.name)] = Nordea
