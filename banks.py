@@ -6,7 +6,7 @@ fields.
 """
 from collections import namedtuple
 
-Bank = namedtuple('Bank', ['name', 'header', 'delimiter'])
+Bank = namedtuple('Bank', ['name', 'header', 'delimiter', 'date_format'])
 banks = dict()
 
 def toKey(name : str) -> str:
@@ -15,20 +15,20 @@ def toKey(name : str) -> str:
     return key.lower()
 
 NordeaOldHeader = ['Date', 'Transaction', 'Memo', 'Amount', 'Balance']
-NordeaOld = Bank('Nordea (gamla)', NordeaOldHeader, delimiter=',')
+NordeaOld = Bank('Nordea (gamla)', NordeaOldHeader, delimiter=',', date_format='%Y-%m-%d')
 banks[toKey(NordeaOld.name)] = NordeaOld
 
 # All information regarding the payee is in a different field called "Rubrik"
 # while "Betalningsmottagare" (i.e, "payee" in English) is empty.
 # This makes no sense, but that's the format they currently use.
 NordeaHeader = ['Date', 'Amount', "Sender" ,"TruePayee", "Name", "Payee", "Balance", "Currency"]
-Nordea = Bank('Nordea', NordeaHeader, delimiter=';')
+Nordea = Bank('Nordea', NordeaHeader, delimiter=';', date_format='%Y-%m-%d')
 banks[toKey(Nordea.name)] = Nordea
 
 IcaHeader = ['Date', 'Payee', 'Transaction', 'Memo', 'Amount', 'Balance']
-Ica = Bank('ICA Banken', IcaHeader, delimiter=';')
+Ica = Bank('ICA Banken', IcaHeader, delimiter=';', date_format='%Y-%m-%d')
 banks[toKey(Ica.name)] = Ica
 
 RevolutHeader = ['Date', 'Payee', 'Outflow', 'Inflow', 'Exchange Outflow', 'Exchange Inflow', 'Balance', 'Category', 'Memo']
-Revolut = Bank('Revolut', RevolutHeader, delimiter=',')
+Revolut = Bank('Revolut', RevolutHeader, delimiter=',', date_format='%d %b %Y')
 banks[toKey(Revolut.name)] = Revolut

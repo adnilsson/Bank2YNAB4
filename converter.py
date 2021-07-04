@@ -27,7 +27,7 @@ import warnings
 class Converter:
     __REQUIRED_HEADERS=('date', 'amount')
 
-    def __init__(self, bankHeader, delimiter):
+    def __init__(self, bankHeader, delimiter, date_format):
         for required_header in self.__REQUIRED_HEADERS:
             if required_header not in [bh.lower() for bh in bankHeader]:
                 raise ValueError(f"'{required_header}' is a required column, but"
@@ -39,6 +39,7 @@ class Converter:
 
         self.BankEntry = namedtuple('BankEntry', ' '.join(bankHeader).lower())
         self.csvDelimiter = delimiter
+        self.dateFormat = date_format
 
         self.ignoredRows   = []
         self.readRows      = []
@@ -126,7 +127,7 @@ class Converter:
         bankInflow  = strAmount if amountSign == '+' else ''
         bankOutflow = strAmount[1::] if amountSign == '-' else ''
 
-        date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
+        date = datetime.strptime(bankline.date, self.dateFormat) #convert to date
         dateStr = date.strftime('%Y/%m/%d')    # desired format
 
         return self.YnabEntry(date=dateStr, payee=payee, category='',
@@ -178,7 +179,7 @@ def badFormatWarn(entry):
 def bank2ynab(bank, csvFilePath):
     """ Perform the conversion from a bank csv-file to YNAB's csv format
     """
-    converter = Converter(bank.header, bank.delimiter)
+    converter = Converter(bank.header, bank.delimiter, bank.date_format)
 
     # Check for accignore.txt and obtain a list ofignored accounts.
     try:
