@@ -1,5 +1,6 @@
 from datetime import datetime
 from collections import namedtuple
+import pdb
 from typing import Iterable, Optional, Tuple
 import csv
 import functools
@@ -112,7 +113,7 @@ class Converter:
                         warnings.warn(badFormatWarn(msg), RuntimeWarning)
                     elif row:
                         bankRow = self.BankEntry._make(strip_whitespace(row))
-                        if 'payee' in bankRow._fields:
+                        if 'payee' in bankRow._fields and toIgnore != []:
                             for i in toIgnore:
                                 if i not in bankRow.payee:
                                     self.readRows.append(bankRow)
