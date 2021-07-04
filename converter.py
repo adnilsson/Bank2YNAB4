@@ -57,12 +57,11 @@ class Converter:
 
     def readInput(self, inputPath, toIgnore):
         with open(inputPath, encoding='utf-8', newline='')  as inputFile:
-            reader = csv.reader(inputFile, delimiter=self.csvDelimiter)
+            header = inputFile.readline()  # assume that the first row is a header and consume it
+            print(f'CSV header of {inputPath}: {header}')
+            reader = csv.reader(inputFile, delimiter=self.csvDelimiter, skipinitialspace=True)
             try:
                 for row in reader:
-                    if reader.line_num == 1: # Skip first row (header)
-                        continue
-
                     if (row and len(row) != namedtupleLen(self.BankEntry)):
                         msg = f' expected row length {namedtupleLen(self.BankEntry)},' \
                                 f' but got {len(row)} ({row})'
