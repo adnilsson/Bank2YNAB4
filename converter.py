@@ -1,5 +1,6 @@
 from datetime import datetime
 from collections import namedtuple
+from typing import Iterable
 import csv
 import warnings
 
@@ -67,7 +68,7 @@ class Converter:
                                 f' but got {len(row)} ({row})'
                         warnings.warn(badFormatWarn(msg), RuntimeWarning)
                     elif row:
-                        bankRow = self.BankEntry._make(row)
+                        bankRow = self.BankEntry._make(strip_whitespace(row))
                         if 'payee' in bankRow._fields:
                             for i in toIgnore:
                                 if i not in bankRow.payee:
@@ -150,6 +151,8 @@ class Converter:
             finally:
                 return hasWritten
 
+def strip_whitespace(row: Iterable):
+    return [value.strip() for value in row]
 
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
