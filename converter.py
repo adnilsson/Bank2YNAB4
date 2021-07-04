@@ -1,18 +1,23 @@
 from datetime import datetime
 from collections import namedtuple
+import pdb
+from typing import Iterable, Optional, Tuple
 import csv
+import functools
 import warnings
+import enum
 
 #TODO:
-# * Support banks that have inflow/outflow instead of "amount" in their csv header
 # * Replace banks.py with a toml config + reader
+# * Assert that headers in __REQUIRED_HEADERS are non-empty
 # * Make this file also function as a script.
 #   - specify a bank and input path + call bank2ynab
-# * User dialog window asking what the payee should be when no payee was found and
-#    save this to choice to file.
 
+# Category is currently always set to empty string.
 
 # ------- On YnabEntry -------
+# Text below copied from: http://web.archive.org/web/20160405175101/http://classic.youneedabudget.com/support/article/csv-file-importing
+#
 # Categories will only import if the category already exists in your budget
 # file with the exact same name. Otherwise the categories will be ignored
 # when importing the file. Also, make sure that the categories are listed
@@ -20,24 +25,64 @@ import warnings
 # For example:
 # Everyday Expenses: Groceries
 #
-# Payee and category are currently always set to empty string
+# Any field can be left blank except the date
 
+class TransactionFormat(enum.Flag):
+    """ CSV files can list transactions in one of these formats.
+    AMOUNT: the CSV has a single column for the transaction amount
+            (can be positive or negative)
+    IN_OUT: the CSV has two columns (INFLOW and OUTFLOW). In any row,
+            only one of these columns should have a value. The value of
+            that column should be positive.
+
+    INFLOW and OUTFLOW only exist as helpers to create IN_OUT.
+    """
+    AMOUNT = enum.auto()
+    INFLOW = enum.auto()
+    OUTFLOW = enum.auto()
+    IN_OUT = INFLOW | OUTFLOW
+
+    @classmethod
+    def match_header(cls, header: list) -> Optional["TransactionFormat"]:
+        matches = []
+        for h in header:
+            if (match := cls.__members__.get(h.upper(), None)) is not None:
+                matches.append(match)
+
+        flag = functools.reduce(lambda x, y: x | y, matches) # OR-together all matches
+        if flag is cls.IN_OUT:
+            return cls.IN_OUT
+        elif flag is cls.AMOUNT:
+            return cls.AMOUNT
+
+        return None
 
 class Converter:
-    __REQUIRED_HEADERS=('date', 'amount')
+    __REQUIRED_HEADERS=('date',)
 
-    def __init__(self, bankHeader, delimiter):
+    def __init__(self, bank_header, delimiter, date_format):
+        lower_header = [bh.lower() for bh in bank_header]
         for required_header in self.__REQUIRED_HEADERS:
-            if required_header not in [bh.lower() for bh in bankHeader]:
+            if required_header not in lower_header:
                 raise ValueError(f"'{required_header}' is a required column, but"
-                     f" it's not in the bank's header:\n {bankHeader}")
+                     f" it's not in the bank's configuration header:\n {bank_header}")
+
+        csvTrasactionFormat = TransactionFormat.match_header(lower_header)
+        if csvTrasactionFormat is None:
+            raise ValueError(f"one of {TransactionFormat.AMOUNT} or both"
+                f" {[TransactionFormat.INFLOW, TransactionFormat.OUTFLOW]} is"
+                f" reqired, but neither could be found in the"
+                f" bank's configuration header:\n {bank_header}")
+        self.csvTrasactionFormat = csvTrasactionFormat
 
         # Specified by YNAB4
         self.YNABHeader = ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
         self.YnabEntry  = namedtuple('YnabEntry', ' '.join(self.YNABHeader).lower())
 
-        self.BankEntry = namedtuple('BankEntry', ' '.join(bankHeader).lower())
+        alpha_only = lambda x: ''.join([char for char in x if char.isalpha()])
+        self.BankEntry = namedtuple('BankEntry', ' '.join([alpha_only(h) for h in lower_header]))
         self.csvDelimiter = delimiter
+        self.dateFormat = date_format
 
         self.ignoredRows   = []
         self.readRows      = []
@@ -57,19 +102,18 @@ class Converter:
 
     def readInput(self, inputPath, toIgnore):
         with open(inputPath, encoding='utf-8', newline='')  as inputFile:
-            reader = csv.reader(inputFile, delimiter=self.csvDelimiter)
+            header = inputFile.readline()  # assume that the first row is a header and consume it
+            print(f'CSV header of {inputPath}: {header}')
+            reader = csv.reader(inputFile, delimiter=self.csvDelimiter, skipinitialspace=True)
             try:
                 for row in reader:
-                    if reader.line_num == 1: # Skip first row (header)
-                        continue
-
                     if (row and len(row) != namedtupleLen(self.BankEntry)):
                         msg = f' expected row length {namedtupleLen(self.BankEntry)},' \
                                 f' but got {len(row)} ({row})'
                         warnings.warn(badFormatWarn(msg), RuntimeWarning)
                     elif row:
-                        bankRow = self.BankEntry._make(row)
-                        if 'payee' in bankRow._fields:
+                        bankRow = self.BankEntry._make(strip_whitespace(row))
+                        if 'payee' in bankRow._fields and toIgnore != []:
                             for i in toIgnore:
                                 if i not in bankRow.payee:
                                     self.readRows.append(bankRow)
@@ -92,7 +136,6 @@ class Converter:
 
         return self.readRows
 
-
     def readOptionalField(self, lambdaFun, alt=''):
         try:
             res = lambdaFun()
@@ -112,21 +155,44 @@ class Converter:
 
         return self.parsedRows
 
+    @staticmethod
+    def _parseAmountField(bankline) -> Tuple[str, str]:
+        amount = bankline.amount
+        amountSign = '-' if amount[0] == '-' else '+'
+
+        bankOutflow = amount[1::] if amountSign == '-' else ''
+        bankInflow  = amount if amountSign == '+' else ''
+
+        return bankOutflow, bankInflow
+
+    @staticmethod
+    def _parseInflowOutflowFields(bankline) -> Tuple[str, str]:
+        return bankline.outflow, bankline.inflow
+
+    def parseTransactionValue(self, bankline) -> Tuple[str, str]:
+        transactionParser = None
+        if self.csvTrasactionFormat is TransactionFormat.AMOUNT:
+            transactionParser = self._parseAmountField
+        elif self.csvTrasactionFormat is TransactionFormat.IN_OUT:
+            transactionParser = self._parseInflowOutflowFields
+
+        if transactionParser is None:
+            raise RuntimeError("expected expected AMOUNT or IN_OUT as transaction"
+                f' format, got {self.csvTrasactionFormat=}')
+
+        return transactionParser(bankline)
+
     def parseRow(self, bankline):
         if type(bankline) is not self.BankEntry:
             raise TypeError(f'{bankline} is not a line from the bank\'s csv-file')
 
-        # payee and memo are not a mandatory fields; set only if they exist
+        # payee and memo are not mandatory fields; set only if they exist
         payee = self.readOptionalField(lambda: bankline.payee)
         memo  = self.readOptionalField(lambda: bankline.memo)
 
-        strAmount = bankline.amount.strip()
-        amountSign = '-' if strAmount[0] == '-' else '+'
+        bankOutflow, bankInflow = self.parseTransactionValue(bankline)
 
-        bankInflow  = strAmount if amountSign == '+' else ''
-        bankOutflow = strAmount[1::] if amountSign == '-' else ''
-
-        date = datetime.strptime(bankline.date, '%Y-%m-%d') #convert to date
+        date = datetime.strptime(bankline.date, self.dateFormat) #convert to date
         dateStr = date.strftime('%Y/%m/%d')    # desired format
 
         return self.YnabEntry(date=dateStr, payee=payee, category='',
@@ -151,10 +217,11 @@ class Converter:
             finally:
                 return hasWritten
 
+def strip_whitespace(row: Iterable):
+    return [value.strip() for value in row]
 
 def namedtupleLen(tupleArg):
     return len(tupleArg._fields)
-
 
 def readIgnore():
     accounts = []
@@ -176,7 +243,7 @@ def badFormatWarn(entry):
 def bank2ynab(bank, csvFilePath):
     """ Perform the conversion from a bank csv-file to YNAB's csv format
     """
-    converter = Converter(bank.header, bank.delimiter)
+    converter = Converter(bank.header, bank.delimiter, bank.date_format)
 
     # Check for accignore.txt and obtain a list ofignored accounts.
     try:

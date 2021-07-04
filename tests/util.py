@@ -1,6 +1,11 @@
 from pathlib import Path
 from typing import Optional
+import pytest
 
+
+@pytest.fixture
+def examples_dir():
+    return find_dir('example_csv')
 
 def find_dir(dirname: str) -> Path:
     """ Find the path to a directory
@@ -26,7 +31,7 @@ def _find_dir(dirname: str, dir: Path) -> Optional[Path]:
 
     return None
 
-def load_example(filename: str, dir: Path):
+def load_example(filename: str, dir: Path) -> Path:
     for file in dir.iterdir():
         if file.name == filename:
             return file
