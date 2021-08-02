@@ -1,20 +1,19 @@
 from datetime import datetime
 from collections import namedtuple
-import pdb
 from typing import Iterable, Optional, Tuple
 import csv
 import functools
 import warnings
 import enum
 
-#TODO:
+# TODO:
 # * Replace banks.py with a toml config + reader
 # * Assert that headers in __REQUIRED_HEADERS are non-empty
 # * Make this file also function as a script.
 #   - specify a bank and input path + call bank2ynab
-
+#
 # Category is currently always set to empty string.
-
+#
 # ------- On YnabEntry -------
 # Text below copied from: http://web.archive.org/web/20160405175101/http://classic.youneedabudget.com/support/article/csv-file-importing
 #
