@@ -1,8 +1,8 @@
 from tkinter import Tk, StringVar, Toplevel, Message
 from tkinter.ttk import Combobox, Frame, Button, Label
 from tkinter.filedialog import askopenfilename
-from converter import bank2ynab
-from banks import banks, toKey
+from src.converter import bank2ynab
+from src.banks import banks, toKey
 
 PADX = 12
 PADY = 10
@@ -27,7 +27,7 @@ class Application(Tk):
         if self._frame is not None:
             self._frame.destroy()
         self._frame = new_frame
-        
+
         self._frame.grid(padx=PADX, pady=PADY)
         self._frame.master.title("Bank2YNAB4")
         self._frame.master.resizable(False, False)
@@ -68,10 +68,10 @@ class BankSelection(Frame):
 
     def getNames(self, banks):
         names = []
-        
+
         for _, b in banks.items():
             names.append(b.name)
-        
+
         names.sort()
         return tuple(names)
 
@@ -81,7 +81,7 @@ class BankSelection(Frame):
                     initialdir='.')
         if inputPath:
             return inputPath
-        else: 
+        else:
             raise ValueError('No file selected')
 
 
@@ -109,7 +109,7 @@ class Report(Frame):
             self.status = "Conversion failed."
         else:
             self.status = "YNAB csv-file successfully written."
-        
+
         self.statusLabel = Label(self, text=self.status)
         self.statusLabel.grid(column=0, row=0, sticky='W', pady=5)
 

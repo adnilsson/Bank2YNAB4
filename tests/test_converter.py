@@ -2,8 +2,8 @@ from pathlib import Path
 
 from util import examples_dir, load_example
 from scripts import fix_revolut
-from converter import bank2ynab
-from banks import banks
+from src.converter import bank2ynab
+from src.banks import banks
 
 
 def test_ica_banken_v1(examples_dir):
