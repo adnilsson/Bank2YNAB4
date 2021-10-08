@@ -1,0 +1,11 @@
+name = "Nordea"
+
+[csv]
+delimiter = ';'
+date_format = '%Y-%m-%d'
+
+[ynab_mapping]
+date = 'Bokföringsdag'
+amount = 'Belopp'
+payee = 'Payee'
+memo = 'Rubrik'
