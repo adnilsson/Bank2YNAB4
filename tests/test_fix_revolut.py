@@ -172,7 +172,7 @@ def test_wrong_decimal_sep():
 def test_period_thousands_sep_and_comma_decimal_sep():
     test_str = '1.000,00, "1.000,00"'
     expect = '"1.000,00", "1.000,00"'
-    nq = fix_revolut.NumberQuoter(thousands_sep= '\.', decimal_sep=',')
+    nq = fix_revolut.NumberQuoter(thousands_sep= '.', decimal_sep=',')
     result = nq.quote_str_number(test_str)
     assert result == expect
 

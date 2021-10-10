@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Optional
 
 class NumberQuoter():
-    def __init__(self, *, thousands_sep: str=',', decimal_sep: str='\.', n_decimals: int=2) -> None:
+    def __init__(self, *, thousands_sep: str=',', decimal_sep: str='.', n_decimals: int=2) -> None:
         self._group_tag = 'largeamount'
 
-        match_number_with_thousands_sep = '([0-9]{{1,3}}{})+[0-9]{{3}}{}[0-9]{{{}}}(?![0-9])'.format(
-            thousands_sep, decimal_sep, n_decimals)
-        self._pattern =  re.compile('(?!")(?=[0-9])(?P<{}>{})(?!")'.format(
+        match_number_with_thousands_sep = r'([0-9]{{1,3}}{})+[0-9]{{3}}{}[0-9]{{{}}}(?![0-9])'.format(
+            re.escape(thousands_sep), re.escape(decimal_sep), n_decimals)
+        self._pattern =  re.compile(r'(?!")(?=[0-9])(?P<{}>{})(?!")'.format(
             self._group_tag, match_number_with_thousands_sep)
         )
 
@@ -17,7 +17,7 @@ class NumberQuoter():
         """ Surround numbers with thousands seperators in quotes.
         Only numbers that aren't already in quotation marks will be replaced.
         """
-        return self._pattern.sub(f'"\g<{self._group_tag}>"', string)
+        return self._pattern.sub(fr'"\g<{self._group_tag}>"', string)
 
 
 def quote_numbers(file: Path, *,
@@ -51,7 +51,7 @@ def quote_numbers(file: Path, *,
         in a regular expression. Defaults to a comma (``','``).
     :keyword decimal_sep:
         The decimal separator. Must be escaped to fit
-        in a regular expression). Defaults to a period (``'\.'``).
+        in a regular expression). Defaults to a period (``'.'``).
     :keyword n_decimals:
         The number of decimal digits in numbers present in ``file``.
         Defaults to ``2``.
@@ -90,9 +90,9 @@ def main():
     group.add_argument('--out', type=Path,
         help="write the updated file to this directory")
     parser.add_argument("-ts", "--thousands-sep", type=str, default=',',
-        help="the thousands separator (must be escaped to fit in a regular expression)")
-    parser.add_argument("-ds", "--decimal_sep", type=str, default='\.',
-        help="the decimal separator (must be escaped to fit in a regular expression)")
+        help="the thousands separator")
+    parser.add_argument("-ds", "--decimal_sep", type=str, default='.',
+        help="the decimal separator")
     parser.add_argument("-p", "--percision", type=int, default=2,
         help="number of decimal digits used in the input file")
 
