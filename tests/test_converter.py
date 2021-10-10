@@ -1,30 +1,36 @@
 from pathlib import Path
 
-from util import examples_dir, load_example
+from util import load_test_example, load_bank_config
 from scripts import fix_revolut
 from src.converter import bank2ynab
-from src.banks import banks
+from src.config import BankConfig
 
-
-def test_ica_banken_v1(examples_dir):
-    csv_path = load_example('ica_banken_v1.csv', examples_dir)
+def test_ica_banken_v1():
+    csv_path = load_test_example('ica_banken_v1.csv')
+    toml_path = load_bank_config('ica_banken_v1.toml')
+    ica_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 5, 5)
-    result = bank2ynab(banks['icabanken'], csv_path)
+    result = bank2ynab(ica_config, csv_path)
     assert expect == result
 
-def test_nordea_v2(examples_dir):
-    csv_path = load_example('nordea_v2.csv', examples_dir)
+def test_nordea_v2():
+    csv_path = load_test_example('nordea_v2.csv')
+    toml_path = load_bank_config('nordea_v2.toml')
+    nordea_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 4, 4)
-    result = bank2ynab(banks['nordea'], csv_path)
+    result = bank2ynab(nordea_config, csv_path)
     assert expect == result
 
-def test_revolut_v1(examples_dir, tmpdir):
-    csv_path = load_example('revolut_v1.csv', examples_dir)
+def test_revolut_v1(tmpdir):
+    csv_path = load_test_example('revolut_v1.csv')
+    toml_path = load_bank_config('revolut_v1.toml')
+    revolut_config = BankConfig.from_file(toml_path)
+
     out_dir = Path(tmpdir)
     fixed_file = fix_revolut.quote_numbers(csv_path, out_dir=out_dir)
 
     expect = (True, 0, 0, 6, 6)
-    result = bank2ynab(banks['revolut'], fixed_file)
+    result = bank2ynab(revolut_config, fixed_file)
     assert expect == result

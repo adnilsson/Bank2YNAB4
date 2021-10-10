@@ -1,10 +1,25 @@
-from typing import Any, Dict, Optional
+import enum
 import tomli
 from pathlib import Path
+from typing import Any, Callable, Dict, Optional
 
-from .converter import TransactionFormat
 
+class TransactionFormat(enum.Flag):
+    """ CSV files can list transactions in one of these formats.
+    AMOUNT: the CSV has a single column for the transaction amount
+            (can be positive or negative)
+    OUT_IN: the CSV has two columns (OUTFLOW and INFLOW). In any row,
+            only one of these columns should have a value. The value of
+            that column should be positive.
 
+    OUTFLOW and INFLOW currently only exist as helpers to create OUT_IN.
+    """
+    AMOUNT = enum.auto()
+    OUTFLOW = enum.auto()
+    INFLOW = enum.auto()
+    OUT_IN = OUTFLOW | INFLOW
+
+# TODO: make columns into properties and move normilization into the getter
 class BankConfig():
     def __init__(
         self,
@@ -31,8 +46,7 @@ class BankConfig():
         self.memo_column = memo_column
         self.category_column = category_column
 
-        # Validate the transaction format. This can either be (1) an amount
-        # or (2) an outflow and an inflow.
+        # Validate the config's transaction format.
         if amount_column is not None:
             if outflow_column is not None or inflow_column is not None:
                 raise ValueError(
@@ -44,12 +58,18 @@ class BankConfig():
         elif outflow_column is not None and inflow_column is not None:
             self.outflow_column = outflow_column
             self.inflow_column = inflow_column
-            self.transaction_format = TransactionFormat.IN_OUT
+            self.transaction_format = TransactionFormat.OUT_IN
         else:
             raise ValueError(
                 "Either amount_column or both outflow_column and inflow_column "
                 f"must not be None: {amount_column=};{outflow_column=};{inflow_column=}"
             )
+
+    def normalize_columns(self, normalizer: Callable[[str], str]):
+        column_attrs = (k for k in self.__dict__.keys() if '_column' in k)
+        set_colmns = (k for k in column_attrs if isinstance(self.__dict__[k], str))
+        for attr in set_colmns:
+            self.__dict__[attr] = normalizer(self.__dict__[attr])
 
     @classmethod
     def from_file(cls, toml_config: Path):
