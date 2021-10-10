@@ -59,7 +59,7 @@ class Converter:
         return self.writeOutput(parsed)
 
     def readInput(self, statement_csv: Path, toIgnore) -> List[Dict[str, str]]:
-        with statement_csv.open(encoding='utf-8', newline='')  as f:
+        with statement_csv.open(encoding='utf-8-sig', newline='')  as f:
             restkey='overflow'
             reader = csv.DictReader(
                 f,
