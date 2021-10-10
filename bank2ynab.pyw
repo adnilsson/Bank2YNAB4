@@ -1,11 +1,14 @@
+from pathlib import Path
 from tkinter import Tk, StringVar, Toplevel, Message
 from tkinter.ttk import Combobox, Frame, Button, Label
 from tkinter.filedialog import askopenfilename
 from src.converter import bank2ynab
-from src.banks import banks, toKey
+from src.config import BankConfig
 
 PADX = 12
 PADY = 10
+
+BANK_DIR = Path('./banks')
 
 ###################################
 #           GUI-code
@@ -36,13 +39,14 @@ class Application(Tk):
 class BankSelection(Frame):
     def __init__(self, master=None, args=None):
         Frame.__init__(self, master)
+        self.banks = [BankConfig.from_file(b) for b in BANK_DIR.iterdir() if b.suffix == '.toml']
         self.createWidgets()
 
     def createWidgets(self):
         self.label = Label(self, text="Choose Your Bank:")
         self.label.grid(column=0, row=0, sticky='W', ipadx=2)
 
-        banknames = self.getNames(banks)
+        banknames = self.getNames()
         self.bankName = StringVar()
         self.bankName.set(banknames[0])
 
@@ -56,7 +60,7 @@ class BankSelection(Frame):
     def convert(self):
         try:
             inputPath = self.getFile()
-            bank = banks[toKey(self.bankName.get())]
+            bank = self.banks[self.bankChosen.current()]
         except ValueError as e:
             pass # No file selected
         else:
@@ -66,21 +70,17 @@ class BankSelection(Frame):
             except (NameError, OSError, ValueError, TypeError) as e:
                 Error(self, e)
 
-    def getNames(self, banks):
-        names = []
-
-        for _, b in banks.items():
-            names.append(b.name)
-
+    def getNames(self):
+        names = [b.name for b in self.banks]
         names.sort()
-        return tuple(names)
+        return names
 
-    def getFile(self):
+    def getFile(self) -> Path:
         inputPath = askopenfilename(
                     filetypes=[('CSV files', '*.csv')],
                     initialdir='.')
         if inputPath:
-            return inputPath
+            return Path(inputPath)
         else:
             raise ValueError('No file selected')
 
