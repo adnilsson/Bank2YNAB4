@@ -7,7 +7,7 @@ from hypothesis import given, settings
 import pytest
 
 from scripts import fix_revolut
-from util import examples_dir, load_example
+from util import examples_dir, load_test_example
 
 _quoter = fix_revolut.NumberQuoter() # class under test
 put_into_quotes = _quoter.quote_str_number
@@ -97,8 +97,8 @@ def test_inject_into_text(large_nums, large_nums_in_quotes, data):
 
 # ----------- PyTest unit tests -----------
 
-def test_example_statement(examples_dir):
-    csv_path = load_example('revolut_v1.csv', examples_dir)
+def test_example_statement():
+    csv_path = load_test_example('revolut_v1.csv')
     revolut_statement = csv_path.read_text()
     quoted = put_into_quotes(revolut_statement)
 
@@ -112,9 +112,9 @@ def test_example_statement(examples_dir):
     assert put_into_quotes(quoted) == quoted
 
 
-def test_replace(examples_dir, tmpdir):
+def test_replace(tmpdir):
     """ Verify that the orgignal file was overwritten. """
-    csv_path = load_example('revolut_v1.csv', examples_dir)
+    csv_path = load_test_example('revolut_v1.csv')
     revolut_statement = csv_path.read_text()
 
     # copy to a temporary directory
@@ -127,9 +127,9 @@ def test_replace(examples_dir, tmpdir):
     assert revolut_statement != quoted_file.read_text()
 
 
-def test_out_dir(examples_dir, tmpdir):
+def test_out_dir(tmpdir):
     """ Verify that the output is written to the expected directory. """
-    csv_path = load_example('revolut_v1.csv', examples_dir)
+    csv_path = load_test_example('revolut_v1.csv')
 
     out_dirs = [Path(tmpdir), Path.cwd(), Path('./')]
     for out_dir in out_dirs:
@@ -138,9 +138,9 @@ def test_out_dir(examples_dir, tmpdir):
         quoted_file.unlink()
 
 
-def test_mutex_arguments(examples_dir):
+def test_mutex_arguments():
     """ ``replace`` and ``out_dir`` are mutually exclusive. """
-    csv_path = load_example('revolut_v1.csv', examples_dir)
+    csv_path = load_test_example('revolut_v1.csv')
     with pytest.raises(ValueError):
         fix_revolut.quote_numbers(csv_path, replace=True, out_dir=examples_dir)
 

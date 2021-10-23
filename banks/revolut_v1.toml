@@ -1,0 +1,13 @@
+name = "Revolut (SEK)"
+
+[csv]
+delimiter = ','
+date_format = '%d %b %Y'
+
+[ynab_mapping]
+date = 'Completed Date'
+outflow = 'Paid Out (SEK)'
+inflow = 'Paid In (SEK)'
+payee = 'Description'
+memo = 'Notes'
+category= 'Category'
