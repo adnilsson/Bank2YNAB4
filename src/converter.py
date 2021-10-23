@@ -41,7 +41,7 @@ class Converter:
     def __init__(self, config: BankConfig):
         self.ynab_header = YnabHeader()
         self.config = config
-        self.config.normalize_columns(normalize)
+        self.config.normalizer = normalize
 
         self.ignoredRows   = []
         self.readRows      = []

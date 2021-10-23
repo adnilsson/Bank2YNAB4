@@ -19,7 +19,6 @@ class TransactionFormat(enum.Flag):
     INFLOW = enum.auto()
     OUT_IN = OUTFLOW | INFLOW
 
-# TODO: make columns into properties and move normilization into the getter
 class BankConfig():
     def __init__(
         self,
@@ -33,18 +32,19 @@ class BankConfig():
         memo_column: Optional[str]=None,
         category_column: Optional[str]=None,
         csv_delimiter: Optional[str]=None,
+        normalizer: Optional[Callable[[str], str]]=None,
     ):
         if date_column is None or date_column == '':
             raise ValueError(f"The date column name is empty; {date_column=}")
-        self.date_column = date_column
+        self._date_column = date_column
 
         self.name = name
         self.date_format = date_format
         self.csv_delimiter = ',' if csv_delimiter is None else csv_delimiter
 
-        self.payee_column = payee_column
-        self.memo_column = memo_column
-        self.category_column = category_column
+        self._payee_column = payee_column
+        self._memo_column = memo_column
+        self._category_column = category_column
 
         # Validate the config's transaction format.
         if amount_column is not None:
@@ -53,11 +53,11 @@ class BankConfig():
                         f"{amount_column=} cannot be combined with outflow/inflow columns "
                         f"({outflow_column=};{inflow_column=})"
                     )
-            self.amount_column = amount_column
+            self._amount_column = amount_column
             self.transaction_format = TransactionFormat.AMOUNT
         elif outflow_column is not None and inflow_column is not None:
-            self.outflow_column = outflow_column
-            self.inflow_column = inflow_column
+            self._outflow_column = outflow_column
+            self._inflow_column = inflow_column
             self.transaction_format = TransactionFormat.OUT_IN
         else:
             raise ValueError(
@@ -65,11 +65,58 @@ class BankConfig():
                 f"must not be None: {amount_column=};{outflow_column=};{inflow_column=}"
             )
 
-    def normalize_columns(self, normalizer: Callable[[str], str]):
-        column_attrs = (k for k in self.__dict__.keys() if '_column' in k)
-        set_colmns = (k for k in column_attrs if isinstance(self.__dict__[k], str))
-        for attr in set_colmns:
-            self.__dict__[attr] = normalizer(self.__dict__[attr])
+        self.normalizer = lambda x: x
+        if normalizer is not None:
+            self.normalizer = normalizer
+
+    @property
+    def date_column(self):
+        if self._date_column is None:
+            return None
+
+        return self.normalizer(self._date_column)
+
+    @property
+    def outflow_column(self):
+        if self._outflow_column is None:
+            return None
+
+        return self.normalizer(self._outflow_column)
+
+    @property
+    def inflow_column(self):
+        if self._inflow_column is None:
+            return None
+
+        return self.normalizer(self._inflow_column)
+
+    @property
+    def amount_column(self):
+        if self._amount_column is None:
+            return None
+
+        return self.normalizer(self._amount_column)
+
+    @property
+    def payee_column(self):
+        if self._payee_column is None:
+            return None
+
+        return self.normalizer(self._payee_column)
+
+    @property
+    def memo_column(self):
+        if self._memo_column is None:
+            return None
+
+        return self.normalizer(self._memo_column)
+
+    @property
+    def category_column(self):
+        if self._category_column is None:
+            return None
+
+        return self.normalizer(self._category_column)
 
     @classmethod
     def from_file(cls, toml_config: Path):
