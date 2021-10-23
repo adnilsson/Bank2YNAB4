@@ -67,7 +67,7 @@ class Converter:
                 restkey=restkey,
                 skipinitialspace=True, # important since qouting won't work if there is leading whitespace
             )
-            reader.fieldnames = [normalize(name) for name in reader.fieldnames]
+            reader.fieldnames = [self.config.normalizer(name) for name in reader.fieldnames]
             try:
                 for raw_row in reader:
                     if (overflowing_columns := raw_row.get(restkey)):
@@ -75,7 +75,7 @@ class Converter:
                         warnings.warn(msg, RuntimeWarning)
                         del raw_row[restkey]
 
-                    row = {k: normalize(v) for k, v in raw_row.items()}
+                    row = {k: self.config.normalizer(v) for k, v in raw_row.items()}
                     is_empty = all((len(v) == 0 for v in row.values()))
                     if is_empty:
                         warnings.warn(
