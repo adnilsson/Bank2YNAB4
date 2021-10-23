@@ -18,7 +18,7 @@ Also, I don't want to be forced to store all my bank data on their servers.
 
 ### Requirements
 
-* Python 3.8+
+* Python ^3.10
 
 # User guide
 
