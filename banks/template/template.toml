@@ -1,8 +1,8 @@
-name = "You Need a Bank"
+name = "The name of your bank"
 
 [csv]
 delimiter = ',' # defaults to ','
-date_format = '%Y-%m-%d' # a valid `datetime.strptime` format string (use a TOML literal to avoid escaping)
+date_format = '%Y-%m-%d' # a valid `datetime.strptime` format string (use a TOML literal to avoid escaping); see https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
 
 # The full YNAB4 header is: ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 # Only 'Date' is strictly required to have a value, but having neither 'Outflow'
@@ -13,9 +13,9 @@ date_format = '%Y-%m-%d' # a valid `datetime.strptime` format string (use a TOML
 #'outflow' and 'inflow', or just 'amount'. Specifying both formats is an error.
 #
 # If this bank uses split columns instead of a single 'Payee' column, you are
-# best of setting payee='Sender' since you probably have more rows with
+# best off setting payee='Sender' since you probably have more rows with
 # outflow than inflow. Split payee columns could be unified, but this is not
-# supported.
+# implemnted.
 #
 # The mapped names are case insensitive.
 #
