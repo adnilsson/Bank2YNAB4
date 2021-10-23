@@ -133,10 +133,13 @@ class Converter:
 
     def parseTransactionValue(self, bankline) -> Tuple[str, str]:
         transactionParser = None
-        if self.config.transaction_format is TransactionFormat.AMOUNT:
-            transactionParser = self._parseAmountField
-        elif self.config.transaction_format is TransactionFormat.OUT_IN:
-            transactionParser = self._parseInflowOutflowFields
+        match self.config.transaction_format:
+            case TransactionFormat.AMOUNT:
+                transactionParser = self._parseAmountField
+            case TransactionFormat.OUT_IN:
+                transactionParser = self._parseInflowOutflowFields
+            case _:
+                raise RuntimeError(f"{self.config.transaction_format=} is not a valid TransactionFormat")
 
         if transactionParser is None:
             raise RuntimeError(f'expected {TransactionFormat.AMOUNT} or'
@@ -167,7 +170,7 @@ class Converter:
     def writeOutput(self, parsedRows):
         hasWritten = False
 
-        if(parsedRows == None or len(parsedRows) == 0):
+        if parsedRows == None or len(parsedRows) == 0:
             return hasWritten
 
         with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
