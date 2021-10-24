@@ -3,26 +3,36 @@ import re
 from pathlib import Path
 from typing import Optional
 
-class NumberQuoter():
-    def __init__(self, *, thousands_sep: str=',', decimal_sep: str='.', n_decimals: int=2) -> None:
-        self._group_tag = 'largeamount'
 
-        match_number_with_thousands_sep = r'([0-9]{{1,3}}{})+[0-9]{{3}}{}[0-9]{{{}}}(?![0-9])'.format(
-            re.escape(thousands_sep), re.escape(decimal_sep), n_decimals)
-        self._pattern =  re.compile(r'(?!")(?=[0-9])(?P<{}>{})(?!")'.format(
-            self._group_tag, match_number_with_thousands_sep)
+class NumberQuoter:
+    def __init__(
+        self, *, thousands_sep: str = ",", decimal_sep: str = ".", n_decimals: int = 2
+    ) -> None:
+        self._group_tag = "largeamount"
+
+        match_number_with_thousands_sep = (
+            r"([0-9]{{1,3}}{})+[0-9]{{3}}{}[0-9]{{{}}}(?![0-9])".format(
+                re.escape(thousands_sep), re.escape(decimal_sep), n_decimals
+            )
+        )
+        self._pattern = re.compile(
+            r'(?!")(?=[0-9])(?P<{}>{})(?!")'.format(
+                self._group_tag, match_number_with_thousands_sep
+            )
         )
 
     def quote_str_number(self, string: str) -> str:
-        """ Surround numbers with thousands seperators in quotes.
+        """Surround numbers with thousands seperators in quotes.
         Only numbers that aren't already in quotation marks will be replaced.
         """
         return self._pattern.sub(fr'"\g<{self._group_tag}>"', string)
 
 
-def quote_numbers(file: Path, *,
-    replace: bool=False,
-    out_dir: Optional[Path]=None,
+def quote_numbers(
+    file: Path,
+    *,
+    replace: bool = False,
+    out_dir: Optional[Path] = None,
     **numberquoter_kwargs,
 ) -> Path:
     """
@@ -65,14 +75,14 @@ def quote_numbers(file: Path, *,
     elif out_dir is not None and (not out_dir.is_dir()):
         raise ValueError(f"{out_dir=} is not a directory")
 
-    nq =  NumberQuoter(**numberquoter_kwargs)
+    nq = NumberQuoter(**numberquoter_kwargs)
     new_file_contents = nq.quote_str_number(file.read_text())
 
-    new_name = file.stem + '_OUT' + file.suffix
+    new_name = file.stem + "_OUT" + file.suffix
     if not replace:
         file = file.with_name(new_name)
 
-    if out_dir is not None: # guaranteed to be a directory
+    if out_dir is not None:  # guaranteed to be a directory
         file = out_dir / new_name
 
     file.write_text(new_file_contents)
@@ -81,23 +91,34 @@ def quote_numbers(file: Path, *,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Makes sure all values with thousands separators are in quotes in an exported CSV file from Revolut.")
-    parser.add_argument('file', type=Path,
-        help="path to the CSV statement file")
+    parser = argparse.ArgumentParser(
+        description="Makes sure all values with thousands separators are in quotes in an exported CSV file from Revolut."
+    )
+    parser.add_argument("file", type=Path, help="path to the CSV statement file")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--replace', action="store_true",
-        help="replace the original statement file")
-    group.add_argument('--out', type=Path,
-        help="write the updated file to this directory")
-    parser.add_argument("-ts", "--thousands-sep", type=str, default=',',
-        help="the thousands separator")
-    parser.add_argument("-ds", "--decimal_sep", type=str, default='.',
-        help="the decimal separator")
-    parser.add_argument("-p", "--percision", type=int, default=2,
-        help="number of decimal digits used in the input file")
+    group.add_argument(
+        "--replace", action="store_true", help="replace the original statement file"
+    )
+    group.add_argument(
+        "--out", type=Path, help="write the updated file to this directory"
+    )
+    parser.add_argument(
+        "-ts", "--thousands-sep", type=str, default=",", help="the thousands separator"
+    )
+    parser.add_argument(
+        "-ds", "--decimal_sep", type=str, default=".", help="the decimal separator"
+    )
+    parser.add_argument(
+        "-p",
+        "--percision",
+        type=int,
+        default=2,
+        help="number of decimal digits used in the input file",
+    )
 
     args = parser.parse_args()
-    quote_numbers(args.file,
+    quote_numbers(
+        args.file,
         replace=args.replace,
         out_dir=args.out,
         thousands_sep=args.thousands_sep,
@@ -105,5 +126,6 @@ def main():
         n_decimals=args.percision,
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
