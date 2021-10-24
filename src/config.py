@@ -1,7 +1,7 @@
 import enum
 import tomli
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
 
 class TransactionFormat(enum.Flag):
@@ -25,14 +25,14 @@ class BankConfig():
         name: str,
         date_format: str,
         date_column: str,
-        outflow_column: Optional[str]=None,
-        inflow_column: Optional[str]=None,
-        amount_column: Optional[str]=None,
-        payee_column: Optional[str]=None,
-        memo_column: Optional[str]=None,
-        category_column: Optional[str]=None,
-        csv_delimiter: Optional[str]=None,
-        normalizer: Optional[Callable[[str], str]]=None,
+        outflow_column: (str | None)=None,
+        inflow_column: (str | None)=None,
+        amount_column: (str | None)=None,
+        payee_column: (str | None)=None,
+        memo_column: (str | None)=None,
+        category_column: (str | None)=None,
+        csv_delimiter: (str | None)=None,
+        normalizer: (Callable[[str], str] | None)=None,
     ):
         if date_column is None or date_column == '':
             raise ValueError(f"The date column name is empty; {date_column=}")
@@ -125,10 +125,10 @@ class BankConfig():
         return cls.from_dict(config)
 
     @classmethod
-    def from_dict(cls, toml_config: Dict[str, Any]):
+    def from_dict(cls, toml_config: dict[str, Any]):
         name = toml_config['name']
 
-        csv_config: Dict[str, Any] = toml_config['csv']
+        csv_config: dict[str, Any] = toml_config['csv']
         date_format = csv_config['date_format']
         csv_delimiter = csv_config.get('delimiter')
 
