@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 
 def examples_dir():
@@ -20,7 +19,7 @@ def find_dir(dirname: str) -> Path:
 
     return dir_path
 
-def _find_dir(dirname: str, dir: Path) -> Optional[Path]:
+def _find_dir(dirname: str, dir: Path) -> Path | None:
     dirs = (d for d in dir.iterdir() if d.is_dir())
     for d in dirs:
         if d.name == dirname:

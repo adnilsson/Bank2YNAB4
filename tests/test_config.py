@@ -1,12 +1,10 @@
-from os import name
 from pathlib import Path
-from typing import List
 from src.config import BankConfig
 
 import pytest
 
 @pytest.fixture
-def bank_config_files() -> List[Path]:
+def bank_config_files() -> list[Path]:
     config_files = [c for c in Path('banks').iterdir() if c.suffix == '.toml']
     if len(config_files) == 0:
         raise FileNotFoundError("No TOML config files found in the 'banks/' directory")

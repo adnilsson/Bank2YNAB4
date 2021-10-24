@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Tuple
+from typing import NamedTuple, TypeAlias
 import csv
 import warnings
 
@@ -27,6 +27,8 @@ from .config import BankConfig, TransactionFormat
 #
 # Any field can be left blank except the date
 
+StrPair: TypeAlias = tuple[str, str]
+
 class YnabHeader(NamedTuple):
     """ Mapping to the column names specified by YNAB4
     """
@@ -48,7 +50,7 @@ class Converter:
         self.parsedRows    = []
         self.numEmptyRows  = 0
 
-    def convert(self, statement_csv: Path, toIgnore=None):
+    def convert(self, statement_csv: Path, toIgnore=None) -> bool:
         toIgnore = [] if toIgnore is None else toIgnore
 
         # Attempt to parse input file to a YNAB-formatted csv file
@@ -58,7 +60,7 @@ class Converter:
 
         return self.writeOutput(parsed)
 
-    def readInput(self, statement_csv: Path, toIgnore) -> List[Dict[str, str]]:
+    def readInput(self, statement_csv: Path, toIgnore) -> list[dict[str, str]]:
         with statement_csv.open(encoding='utf-8-sig', newline='')  as f:
             restkey='overflow'
             reader = csv.DictReader(
@@ -113,7 +115,7 @@ class Converter:
 
         return self.parsedRows
 
-    def _parseAmountField(self, bankline) -> Tuple[str, str]:
+    def _parseAmountField(self, bankline) -> StrPair:
         amount = bankline[self.config.amount_column]
         sign = '-' if amount[0] == '-' else '+'
 
@@ -122,7 +124,7 @@ class Converter:
 
         return outflow, inflow
 
-    def _parseInflowOutflowFields(self, bankline) -> Tuple[str, str]:
+    def _parseInflowOutflowFields(self, bankline) -> StrPair:
         outflow = bankline.get(self.config.outflow_column, '')
         inflow = bankline.get(self.config.inflow_column, '')
 
@@ -131,7 +133,7 @@ class Converter:
 
         return outflow, inflow
 
-    def parseTransactionValue(self, bankline) -> Tuple[str, str]:
+    def parseTransactionValue(self, bankline) -> StrPair:
         transactionParser = None
         match self.config.transaction_format:
             case TransactionFormat.AMOUNT:
@@ -148,7 +150,7 @@ class Converter:
 
         return transactionParser(bankline)
 
-    def parseRow(self, bankline: Dict[str, str]):
+    def parseRow(self, bankline: dict[str, str]):
         # must have outflow/inflow columns in YNAB4
         outflow, inflow = self.parseTransactionValue(bankline)
 
@@ -167,7 +169,7 @@ class Converter:
 
         return ynab_row
 
-    def writeOutput(self, parsedRows):
+    def writeOutput(self, parsedRows) -> bool:
         hasWritten = False
 
         if parsedRows == None or len(parsedRows) == 0:
@@ -184,7 +186,7 @@ class Converter:
             finally:
                 return hasWritten
 
-def namedtupleLen(tupleArg):
+def namedtupleLen(tupleArg: NamedTuple) -> int:
     return len(tupleArg._fields)
 
 def readIgnore():
