@@ -1,0 +1,15 @@
+name = "Revolut (SEK)"
+
+[currency_format]
+thousands_separator = ''
+decimal_point = '.'
+
+[csv]
+delimiter = ','
+date_format = '%Y-%m-%d %H:%M:%S'
+
+[ynab_mapping]
+date = 'Started Date'
+amount = 'Amount'
+payee = 'Description'
+category = 'Type'

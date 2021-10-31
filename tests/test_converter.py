@@ -35,6 +35,15 @@ def test_revolut_v1(tmpdir):
     result = bank2ynab(revolut_config, fixed_file)
     assert expect == result
 
+def test_revolut_v2(tmpdir):
+    csv_path = load_test_example('revolut_v2.csv')
+    toml_path = load_bank_config('revolut_v2.toml')
+    revolut_config = BankConfig.from_file(toml_path)
+
+    expect = (True, 0, 0, 5, 5)
+    result = bank2ynab(revolut_config, csv_path)
+    assert expect == result
+
 def test_identity():
     csv_path = load_test_example('example_ynab.csv')
     toml_path =  load_template_config()

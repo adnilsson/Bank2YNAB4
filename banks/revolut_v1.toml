@@ -1,4 +1,4 @@
-name = "Revolut (SEK)"
+name = "Revolut (SEK) [Deprecated]"
 
 [currency_format]
 thousands_separator = ','
