@@ -178,6 +178,7 @@ class Converter:
         with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
             writer = csv.DictWriter(outputFile, list(self.ynab_header))
             try:
+                writer.writeheader()
                 writer.writerows(parsedRows)
                 hasWritten = True
                 print('YNAB csv-file successfully written.')
