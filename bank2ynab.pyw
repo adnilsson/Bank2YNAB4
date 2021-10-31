@@ -39,14 +39,16 @@ class Application(Tk):
 class BankSelection(Frame):
     def __init__(self, master=None, args=None):
         Frame.__init__(self, master)
-        self.banks = [BankConfig.from_file(b) for b in BANK_DIR.iterdir() if b.suffix == '.toml']
+        banks = [BankConfig.from_file(b) for b in BANK_DIR.iterdir() if b.suffix == '.toml']
+        banks.sort(key=lambda b: b.name)
+        self.banks = banks
         self.createWidgets()
 
     def createWidgets(self):
         self.label = Label(self, text="Choose Your Bank:")
         self.label.grid(column=0, row=0, sticky='W', ipadx=2)
 
-        banknames = self.getNames()
+        banknames = [b.name for b in self.banks]
         self.bankName = StringVar()
         self.bankName.set(banknames[0])
 
@@ -69,11 +71,6 @@ class BankSelection(Frame):
                 self.master.switch_frame(Report, result)
             except (NameError, OSError, ValueError, TypeError) as e:
                 Error(self, e)
-
-    def getNames(self):
-        names = [b.name for b in self.banks]
-        names.sort()
-        return names
 
     def getFile(self) -> Path:
         inputPath = askopenfilename(
