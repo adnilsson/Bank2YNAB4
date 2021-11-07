@@ -35,7 +35,7 @@ def test_revolut_v1(tmpdir):
     result = bank2ynab(revolut_config, fixed_file)
     assert expect == result
 
-def test_revolut_v2(tmpdir):
+def test_revolut_v2():
     csv_path = load_test_example('revolut_v2.csv')
     toml_path = load_bank_config('revolut_v2.toml')
     revolut_config = BankConfig.from_file(toml_path)
