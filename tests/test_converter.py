@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from util import load_test_example, load_bank_config
+from util import load_test_example, load_bank_config, load_template_config, net_flow
 from scripts import fix_revolut
 from src.converter import bank2ynab
 from src.config import BankConfig
@@ -34,3 +34,17 @@ def test_revolut_v1(tmpdir):
     expect = (True, 0, 0, 6, 6)
     result = bank2ynab(revolut_config, fixed_file)
     assert expect == result
+
+def test_identity():
+    csv_path = load_test_example('example_ynab.csv')
+    toml_path =  load_template_config()
+    template_config = BankConfig.from_file(toml_path)
+
+    expect = (True, 0, 0, 2, 2)
+    result = bank2ynab(template_config, csv_path)
+    assert expect == result
+
+    net_bank = net_flow(csv_path)
+    net_converted = net_flow(Path.cwd() / 'ynabImport.csv')
+    assert net_bank == net_converted
+    print(f"{net_converted=}")

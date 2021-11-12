@@ -1,5 +1,9 @@
 name = "Revolut (SEK)"
 
+[currency_format]
+thousands_separator = ','
+decimal_point = '.'
+
 [csv]
 delimiter = ','
 date_format = '%d %b %Y'
@@ -10,4 +14,4 @@ outflow = 'Paid Out (SEK)'
 inflow = 'Paid In (SEK)'
 payee = 'Description'
 memo = 'Notes'
-category= 'Category'
+category = 'Category'
