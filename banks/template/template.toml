@@ -1,8 +1,12 @@
 name = "The name of your bank"
 
 [csv]
-delimiter = ',' # defaults to ','
+delimiter = ','          # defaults to ','
 date_format = '%Y-%m-%d' # a valid `datetime.strptime` format string (use a TOML literal to avoid escaping); see https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+
+[currency_format]
+thousands_separator = '' # required, even if no separator is used, in which case set it to the empty string
+decimal_point = '.'      # required
 
 # The full YNAB4 header is: ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
 # Only 'Date' is strictly required to have a value, but having neither 'Outflow'
@@ -20,10 +24,10 @@ date_format = '%Y-%m-%d' # a valid `datetime.strptime` format string (use a TOML
 # The mapped names are case insensitive.
 #
 [ynab_mapping]
-date = 'Date' # required
+date = 'Date'       # required
 outflow = 'Outflow'
 inflow = 'Inflow'
 #amount = 'Amount' # can replace ynab_mapping.outflow and ynab_mapping.inflow
 payee = 'Payee'
 memo = 'Memo'
-category= 'Category'
+category = 'Category'

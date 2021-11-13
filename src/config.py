@@ -1,4 +1,6 @@
 import enum
+from dataclasses import dataclass
+import warnings
 import tomli
 from pathlib import Path
 from typing import Any, Callable
@@ -19,11 +21,24 @@ class TransactionFormat(enum.Flag):
     INFLOW = enum.auto()
     OUT_IN = OUTFLOW | INFLOW
 
+@dataclass(frozen=True)
+class CurrencyFormat:
+    thousands_sep: str
+    decimal_point: str
+
+    def __post_init__(self):
+        if len(self.thousands_sep) > 1:
+            raise ValueError("The thousands separator must be empty or a single character, not '{thousands_sep}'")
+
+        if len(self.decimal_point) != 1:
+            raise ValueError("The decimal separator must be a single character, not '{decimal_point}'")
+
 class BankConfig():
     def __init__(
         self,
         name: str,
         date_format: str,
+        currency_format: CurrencyFormat,
         date_column: str,
         outflow_column: (str | None)=None,
         inflow_column: (str | None)=None,
@@ -41,6 +56,7 @@ class BankConfig():
         self.name = name
         self.date_format = date_format
         self.csv_delimiter = ',' if csv_delimiter is None else csv_delimiter
+        self.currency_format = currency_format
 
         self._payee_column = payee_column
         self._memo_column = memo_column
@@ -128,9 +144,26 @@ class BankConfig():
     def from_dict(cls, toml_config: dict[str, Any]):
         name = toml_config['name']
 
+        currency_config = toml_config['currency_format']
+        currency_format = CurrencyFormat(
+            thousands_sep=currency_config['thousands_separator'],
+            decimal_point=currency_config['decimal_point'],
+        )
+
         csv_config: dict[str, Any] = toml_config['csv']
         date_format = csv_config['date_format']
-        csv_delimiter = csv_config.get('delimiter')
+        csv_delimiter = csv_config.get('delimiter', ',')
+        if len(csv_delimiter) != 1:
+            raise ValueError(f"The CSV delimiter must be a single character, not '{csv_delimiter}'")
+
+        if csv_delimiter == currency_format.decimal_point == ',':
+            warnings.warn(
+                "Both the delimiter and decimal point characters are ',' - make "
+                "sure all transaction values are properly quoted", UserWarning)
+        elif csv_delimiter == currency_format.thousands_sep == ',':
+            warnings.warn(
+                "Both the delimiter and thousands separator characters are ',' - make "
+                "sure all transaction values are properly quoted", UserWarning)
 
         ynab_mapping = toml_config['ynab_mapping']
         date_column = ynab_mapping['date']
@@ -145,6 +178,7 @@ class BankConfig():
             name=name,
             date_format=date_format,
             csv_delimiter=csv_delimiter,
+            currency_format=currency_format,
             date_column=date_column,
             outflow_column=outflow_column,
             inflow_column=inflow_column,

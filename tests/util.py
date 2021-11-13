@@ -1,3 +1,5 @@
+import csv
+from decimal import Decimal
 from pathlib import Path
 
 
@@ -37,8 +39,28 @@ def load_test_example(filename: str) -> Path:
 def load_bank_config(filename: str) -> Path:
     return _file_in_dir(filename, dir=bank_configs_dir())
 
+def load_template_config():
+    return _file_in_dir("template.toml", dir=bank_configs_dir() / "template")
+
 def _file_in_dir(filename: str, dir: Path) -> Path:
     for file in dir.iterdir():
         if file.name == filename:
             return file
     raise FileNotFoundError(f"{filename.name} could be found in {dir}")
+
+def _str_to_decimal(decimal: str ) -> Decimal:
+    if decimal == '':
+        return Decimal('0')
+
+    return Decimal(decimal)
+
+
+def net_flow(ynab_csv: Path) -> Decimal:
+    net = Decimal('0')
+    with ynab_csv.open('r', encoding="utf-8-sig", newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            outflow, inflow = [_str_to_decimal(row[key]) for key in ('Outflow', 'Inflow')]
+            net = net + inflow - outflow
+
+    return net

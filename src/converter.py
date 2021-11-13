@@ -1,10 +1,12 @@
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import NamedTuple, TypeAlias
 import csv
+import re
 import warnings
 
-from .config import BankConfig, TransactionFormat
+from .config import BankConfig, TransactionFormat, CurrencyFormat
 
 # TODO:
 # * Make accignore a feature of the bank config file
@@ -27,7 +29,9 @@ from .config import BankConfig, TransactionFormat
 #
 # Any field can be left blank except the date
 
-StrPair: TypeAlias = tuple[str, str]
+
+MaybeDecimal: TypeAlias = Decimal | None
+MaybeDecimalPair: TypeAlias = tuple[MaybeDecimal, MaybeDecimal]
 
 class YnabHeader(NamedTuple):
     """ Mapping to the column names specified by YNAB4
@@ -39,11 +43,35 @@ class YnabHeader(NamedTuple):
     outflow: str = 'Outflow'
     inflow: str = 'Inflow'
 
+class TransactionValueParser:
+    _fraction_tag = "decimals"
+
+    def __init__(self, config: CurrencyFormat):
+        self._thousands_match = re.compile(fr"{re.escape(config.thousands_sep)}")
+        re_decimal_point = re.escape(config.decimal_point)
+        self._fractional_match = re.compile(fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9]{{2}}(?![0-9]))") # Assume a resolution of hundreds
+        self._decimal_match = re.compile(r"-?[0-9]+\.[0-9]{2}")
+
+    def parse(self, value: str) -> Decimal | None:
+        # remove all thousands separators
+        no_thousands_groups = re.sub(self._thousands_match, "", value)
+
+        # replace whatever decimal point was used with a dot
+        replaced_decimal= re.sub(self._fractional_match, "." + fr"\g<{self._fraction_tag}>", no_thousands_groups)
+
+        # match on a number string that can be converted to a Decimal
+        number_only = re.search(self._decimal_match, replaced_decimal)
+        if number_only is None:
+            return None
+
+        return Decimal(number_only[0])
+
 class Converter:
     def __init__(self, config: BankConfig):
         self.ynab_header = YnabHeader()
         self.config = config
         self.config.normalizer = normalize
+        self.transaction_parser = TransactionValueParser(config.currency_format)
 
         self.ignoredRows   = []
         self.readRows      = []
@@ -115,44 +143,49 @@ class Converter:
 
         return self.parsedRows
 
-    def _parseAmountField(self, bankline) -> StrPair:
+    def _parse_amount(self, bankline) -> MaybeDecimalPair:
         amount = bankline[self.config.amount_column]
-        sign = '-' if amount[0] == '-' else '+'
+        decimal = self.transaction_parser.parse(amount)
 
-        outflow = amount[1::] if sign == '-' else ''
-        inflow  = amount if sign == '+' else ''
+        if decimal is None:
+            raise RuntimeError(f"Failed to parse transaction; {amount=}")
+
+        if decimal.is_zero():
+            raise RuntimeError(f"A transaction value should never be zero; {amount=}")
+
+        outflow = abs(decimal) if decimal.is_signed() else Decimal('0')
+        inflow  = decimal if not decimal.is_signed() else Decimal('0')
 
         return outflow, inflow
 
-    def _parseInflowOutflowFields(self, bankline) -> StrPair:
-        outflow = bankline.get(self.config.outflow_column, '')
-        inflow = bankline.get(self.config.inflow_column, '')
-
-        if outflow == inflow == '':
+    def _parse_outflow_inflow(self, bankline) -> MaybeDecimalPair:
+        out_in = [bankline[k] for k in (self.config.outflow_column, self.config.inflow_column)]
+        if out_in[0] == out_in[1] == '':
             warnings.warn("Both outflow and inflow are empty", RuntimeWarning)
 
+        outflow, inflow = [self.transaction_parser.parse(v) for v in out_in]
+
         return outflow, inflow
 
-    def parseTransactionValue(self, bankline) -> StrPair:
-        transactionParser = None
+    def parseTransactionValue(self, bankline) -> MaybeDecimalPair:
         match self.config.transaction_format:
             case TransactionFormat.AMOUNT:
-                transactionParser = self._parseAmountField
+                transaction_parser = self._parse_amount
             case TransactionFormat.OUT_IN:
-                transactionParser = self._parseInflowOutflowFields
+                transaction_parser = self._parse_outflow_inflow
             case _:
                 raise RuntimeError(f"{self.config.transaction_format=} is not a valid TransactionFormat")
 
-        if transactionParser is None:
+        if transaction_parser is None:
             raise RuntimeError(f'expected {TransactionFormat.AMOUNT} or'
                 f' {TransactionFormat.OUT_IN} as transaction'
                 f' format, got {self.csvTrasactionFormat=}')
 
-        return transactionParser(bankline)
+        return transaction_parser(bankline)
 
     def parseRow(self, bankline: dict[str, str]):
         # must have outflow/inflow columns in YNAB4
-        outflow, inflow = self.parseTransactionValue(bankline)
+        outflow, inflow = decimal_pair_to_str(self.parseTransactionValue(bankline))
 
         bank_date = bankline[self.config.date_column]
         date = datetime.strptime(bank_date, self.config.date_format) # convert to datetime
@@ -187,8 +220,9 @@ class Converter:
             finally:
                 return hasWritten
 
-def namedtupleLen(tupleArg: NamedTuple) -> int:
-    return len(tupleArg._fields)
+def decimal_pair_to_str(dp: MaybeDecimal) -> tuple[str | None]:
+    to_str = lambda d: str(d) if d is not None else None
+    return tuple(to_str(d) for d in dp)
 
 def readIgnore():
     accounts = []

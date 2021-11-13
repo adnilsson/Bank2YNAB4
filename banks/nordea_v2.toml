@@ -1,5 +1,9 @@
 name = "Nordea"
 
+[currency_format]
+thousands_separator = ''
+decimal_point = ','
+
 [csv]
 delimiter = ';'
 date_format = '%Y-%m-%d'
