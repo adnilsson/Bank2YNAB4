@@ -3,11 +3,11 @@ Converts from bank transactions exported as CSV to the format accepted by YNAB4.
 
 ## Why YNAB4?
 
-Besides the whole UX aspect, YNAB4 was great for two reasons.
+Besides being much nicer to use than a simple spreadsheet, YNAB4 was great for two reasons:
 1. One-time cost.
 2. Data stored locally, with the option of uploading to Dropbox.
 
-The new, web-based YNAB follows a monthly subscription  model.
+The new, web-based YNAB follows a monthly subscription model.
 Paying $7 to make my monthly budget just does not make sense for me.
 Also, I don't want to be forced to store all my bank data on their servers.
 
@@ -26,7 +26,7 @@ Using Bank2YNAB4 is straightforward:
 1. Run `bank2ynab.py` to launch the application.
 2. Select one of the available banks from the drop-down menu.
 3. From the dialog, find and select the CSV file from the bank (a header is assumed to exist in the CSV-file).
-4. If conversion succeeded, then the converted CSV file is written to `ynabImport.csv` in the same directory as `bank2ynab.py`.
+4. If conversion succeeded, then the converted CSV file is written to `ynabImport.csv` in the same directory as `bank2ynab.pyw`.
 
 ## List of supported banks
 
@@ -42,7 +42,7 @@ A [template config](banks/template/template.toml) is provided as a starting poin
 Filling out the template should hopefully be clear from the comments.
 Nevertheless, a short description can be helpful:
 1. Create a new bank config by copying and renaming the template.
-2. Give the bank an appropriate `name` and specify the delimiter and date format used in the bank's CSV statements in the `csv` table.
+2. Give the bank an appropriate `name` and specify all delimiters and the date format used.
 3. Fill out the `ynab_mapping` table with the corresponding column names from the bank's CSV statement.
 
 Some keys in the template's `ynab_mapping` table are optional, however:
