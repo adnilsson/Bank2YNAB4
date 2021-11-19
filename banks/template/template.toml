@@ -29,8 +29,8 @@ decimal_point = '.'      # required
 #
 [ynab_mapping]
 date = 'Date'         # required
-outflow = 'Outflow'
-inflow = 'Inflow'
+outflow = 'Outflow'   # required
+inflow = 'Inflow'     # required
 payee = 'Payee'
 memo = 'Memo'
 category = 'Category'
