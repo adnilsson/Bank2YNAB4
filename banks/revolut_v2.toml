@@ -10,6 +10,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 
 [ynab_mapping]
 date = 'Started Date'
-amount = 'Amount'
+outflow = ['Amount', "Fee"]
+inflow = 'Amount'
 payee = 'Description'
 category = 'Type'

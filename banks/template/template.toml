@@ -9,14 +9,18 @@ thousands_separator = '' # required, even if no separator is used, in which case
 decimal_point = '.'      # required
 
 # The full YNAB4 header is: ['Date', 'Payee', 'Category', 'Memo', 'Outflow', 'Inflow']
-# Only 'Date' is strictly required to have a value, but having neither 'Outflow'
-# nor 'Inflow' makes little sense.
+# Only Date is strictly required to have a value, but having neither Outflow
+# nor Inflow makes little sense.
 #
-# If this bank uses an 'Amount' column instead of 'Outflow' and 'Inflow', you
-# can map the 'amount' key instead. You should only ever map either both
-#'outflow' and 'inflow', or just 'amount'. Specifying both formats is an error.
+# Keys 'outflow' and 'inflow' expect either a single column name or a list of
+# column names. All listed columns count towards the total that is imported
+# to YNAB. For example, some banks have extra columns for transaction fees.
+# To find the grand total, we have to sum the transaction amount and the fees.
 #
-# If this bank uses split columns instead of a single 'Payee' column, you are
+# If the bank uses an Amount column instead of Outflow and Inflow, you
+# should map that column to both 'outflow' and 'inflow'.
+#
+# If the bank uses split columns instead of a single Payee column, you are
 # best off setting payee='Sender' since you probably have more rows with
 # outflow than inflow. Split payee columns could be unified, but this is not
 # implemnted.
@@ -24,10 +28,9 @@ decimal_point = '.'      # required
 # The mapped names are case insensitive.
 #
 [ynab_mapping]
-date = 'Date'       # required
-outflow = 'Outflow'
-inflow = 'Inflow'
-#amount = 'Amount' # can replace ynab_mapping.outflow and ynab_mapping.inflow
+date = 'Date'         # required
+outflow = 'Outflow'   # required
+inflow = 'Inflow'     # required
 payee = 'Payee'
 memo = 'Memo'
 category = 'Category'
