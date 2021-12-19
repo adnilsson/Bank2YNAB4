@@ -45,8 +45,10 @@ def load_template_config():
 def _file_in_dir(filename: str, dir: Path) -> Path:
     for file in dir.iterdir():
         if file.name == filename:
+            if not file.is_file():
+                raise FileNotFoundError(f"{file} is not a file")
             return file
-    raise FileNotFoundError(f"{filename.name} could be found in {dir}")
+    raise FileNotFoundError(f"{filename} could be found in {dir}")
 
 def _str_to_decimal(decimal: str ) -> Decimal:
     if decimal == '':
