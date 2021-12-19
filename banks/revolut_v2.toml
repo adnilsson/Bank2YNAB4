@@ -1,0 +1,15 @@
+name = "Revolut"
+
+[currency_format]
+thousands_separator = ''
+decimal_point = '.'
+
+[csv]
+delimiter = ','
+date_format = '%Y-%m-%d %H:%M:%S'
+
+[ynab_mapping]
+date = 'Started Date'
+outflow = ['Amount', "Fee"]
+inflow = 'Amount'
+payee = 'Description'

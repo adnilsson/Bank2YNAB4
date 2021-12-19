@@ -11,5 +11,6 @@ date_format = '%Y-%m-%d'
 
 [ynab_mapping]
 date = 'Datum'
-amount = 'Belopp'
+inflow = 'Belopp'
+outflow = 'Belopp'
 payee = 'Text'

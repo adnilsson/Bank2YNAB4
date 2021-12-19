@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from util import load_test_example, load_bank_config, load_template_config, net_flow
-from scripts import fix_revolut
+from scripts.fix_revolut import fix_revolut
 from src.converter import bank2ynab
 from src.config import BankConfig
 
@@ -23,16 +23,13 @@ def test_nordea_v2():
     result = bank2ynab(nordea_config, csv_path)
     assert expect == result
 
-def test_revolut_v1(tmpdir):
-    csv_path = load_test_example('revolut_v1.csv')
-    toml_path = load_bank_config('revolut_v1.toml')
+def test_revolut_v2():
+    csv_path = load_test_example('revolut_v2.csv')
+    toml_path = load_bank_config('revolut_v2.toml')
     revolut_config = BankConfig.from_file(toml_path)
 
-    out_dir = Path(tmpdir)
-    fixed_file = fix_revolut.quote_numbers(csv_path, out_dir=out_dir)
-
-    expect = (True, 0, 0, 6, 6)
-    result = bank2ynab(revolut_config, fixed_file)
+    expect = (True, 0, 0, 5, 5)
+    result = bank2ynab(revolut_config, csv_path)
     assert expect == result
 
 def test_identity():

@@ -6,11 +6,57 @@ from hypothesis.strategies import decimals, data, lists, text, integers
 from hypothesis import given, settings
 import pytest
 
-from scripts import fix_revolut
-from util import examples_dir, load_test_example
+import fix_revolut
 
 _quoter = fix_revolut.NumberQuoter() # class under test
 put_into_quotes = _quoter.quote_str_number
+
+TEST_INPUT = "revolut_v1_example.csv"
+
+# ----------- IO -----------
+
+def find_dir(dirname: str) -> Path:
+    """ Find the path to a directory
+    Recursively (from the current directory) look for the the directory.
+
+    Raises RuntimeError if the directory could not be found.
+    """
+    dir_path = _find_dir(dirname, Path.cwd())
+    if dir_path is None:
+        raise RuntimeError(f"no directory named '{dirname}' could be found relative to {Path.cwd()}")
+
+    return dir_path
+
+def _find_dir(dirname: str, dir: Path) -> Path | None:
+    dirs = (d for d in dir.iterdir() if d.is_dir())
+    for d in dirs:
+        if d.name == dirname:
+            return d
+
+        recurse = _find_dir(dirname, d) # dfs-style
+        if recurse is not None:
+            return recurse
+
+    return None
+
+def _file_in_dir(filename: str, dir: Path) -> Path:
+    for file in dir.iterdir():
+        if file.name == filename:
+            if not file.is_file():
+                raise FileNotFoundError(f"{file} is not a file")
+            return file
+    raise FileNotFoundError(f"{filename} could be found in {dir}")
+
+
+@pytest.fixture(scope="module")
+def csv_path() -> Path :
+    try:
+        example_path = _file_in_dir(TEST_INPUT, dir=Path.cwd())
+    except FileNotFoundError:
+        # find the script's dir first
+        example_path = _file_in_dir(TEST_INPUT, dir=find_dir(fix_revolut.__name__))
+
+    return example_path
 
 # ----------- Hypothesis strategies -----------
 
@@ -97,8 +143,7 @@ def test_inject_into_text(large_nums, large_nums_in_quotes, data):
 
 # ----------- PyTest unit tests -----------
 
-def test_example_statement():
-    csv_path = load_test_example('revolut_v1.csv')
+def test_example_statement(csv_path):
     revolut_statement = csv_path.read_text()
     quoted = put_into_quotes(revolut_statement)
 
@@ -112,9 +157,8 @@ def test_example_statement():
     assert put_into_quotes(quoted) == quoted
 
 
-def test_replace(tmpdir):
+def test_replace(tmpdir, csv_path):
     """ Verify that the orgignal file was overwritten. """
-    csv_path = load_test_example('revolut_v1.csv')
     revolut_statement = csv_path.read_text()
 
     # copy to a temporary directory
@@ -127,10 +171,8 @@ def test_replace(tmpdir):
     assert revolut_statement != quoted_file.read_text()
 
 
-def test_out_dir(tmpdir):
+def test_out_dir(tmpdir, csv_path):
     """ Verify that the output is written to the expected directory. """
-    csv_path = load_test_example('revolut_v1.csv')
-
     out_dirs = [Path(tmpdir), Path.cwd(), Path('./')]
     for out_dir in out_dirs:
         quoted_file = fix_revolut.quote_numbers(csv_path, out_dir=out_dir)
@@ -138,11 +180,10 @@ def test_out_dir(tmpdir):
         quoted_file.unlink()
 
 
-def test_mutex_arguments():
+def test_mutex_arguments(csv_path):
     """ ``replace`` and ``out_dir`` are mutually exclusive. """
-    csv_path = load_test_example('revolut_v1.csv')
     with pytest.raises(ValueError):
-        fix_revolut.quote_numbers(csv_path, replace=True, out_dir=examples_dir)
+        fix_revolut.quote_numbers(csv_path, replace=True, out_dir=Path.cwd())
 
 def test_wrong_thousands_sep():
     test_str = '1 000.00, "1 000.00"'
