@@ -1,4 +1,4 @@
-name = "Revolut (SEK)"
+name = "Revolut"
 
 [currency_format]
 thousands_separator = ''
@@ -13,4 +13,3 @@ date = 'Started Date'
 outflow = ['Amount', "Fee"]
 inflow = 'Amount'
 payee = 'Description'
-category = 'Type'
