@@ -8,24 +8,28 @@ import pytest
 
 import fix_revolut
 
-_quoter = fix_revolut.NumberQuoter() # class under test
+_quoter = fix_revolut.NumberQuoter()  # class under test
 put_into_quotes = _quoter.quote_str_number
 
 TEST_INPUT = "revolut_v1_example.csv"
 
 # ----------- IO -----------
 
+
 def find_dir(dirname: str) -> Path:
-    """ Find the path to a directory
+    """Find the path to a directory
     Recursively (from the current directory) look for the the directory.
 
     Raises RuntimeError if the directory could not be found.
     """
     dir_path = _find_dir(dirname, Path.cwd())
     if dir_path is None:
-        raise RuntimeError(f"no directory named '{dirname}' could be found relative to {Path.cwd()}")
+        raise RuntimeError(
+            f"no directory named '{dirname}' could be found relative to {Path.cwd()}"
+        )
 
     return dir_path
+
 
 def _find_dir(dirname: str, dir: Path) -> Path | None:
     dirs = (d for d in dir.iterdir() if d.is_dir())
@@ -33,11 +37,12 @@ def _find_dir(dirname: str, dir: Path) -> Path | None:
         if d.name == dirname:
             return d
 
-        recurse = _find_dir(dirname, d) # dfs-style
+        recurse = _find_dir(dirname, d)  # dfs-style
         if recurse is not None:
             return recurse
 
     return None
+
 
 def _file_in_dir(filename: str, dir: Path) -> Path:
     for file in dir.iterdir():
@@ -49,7 +54,7 @@ def _file_in_dir(filename: str, dir: Path) -> Path:
 
 
 @pytest.fixture(scope="module")
-def csv_path() -> Path :
+def csv_path() -> Path:
     try:
         example_path = _file_in_dir(TEST_INPUT, dir=Path.cwd())
     except FileNotFoundError:
@@ -58,32 +63,41 @@ def csv_path() -> Path :
 
     return example_path
 
+
 # ----------- Hypothesis strategies -----------
 
+
 def format_num(num: Decimal) -> str:
-    """ Place ',' as  thousands separator and round to two decimals"""
-    return f'{num:,}'
+    """Place ',' as  thousands separator and round to two decimals"""
+    return f"{num:,}"
+
 
 def insert_quotes(s: str) -> str:
     return f'"{s}"'
 
+
 # Generate numbers that corrupt any CSV-format that uses comma separators
-large_number = decimals(min_value=1000.00, allow_infinity=False,
-    allow_nan=False, places=2).map(format_num)
+large_number = decimals(
+    min_value=1000.00, allow_infinity=False, allow_nan=False, places=2
+).map(format_num)
 list_of_large_number = integers(min_value=1, max_value=16).flatmap(
     lambda n: lists(large_number, min_size=n, max_size=n)
 )
 
 # Generate an incorrect format (NumberQuoter is by default configured to
 # search for exactly two decimal digits).
-large_number_too_many_or_few_decimals = integers(min_value=1, max_value=12).filter(lambda n: n != 2).flatmap(
-    lambda n: decimals(min_value=1000.00, allow_infinity=False,
-        allow_nan=False, places=n).map(format_num)
+large_number_too_many_or_few_decimals = (
+    integers(min_value=1, max_value=12)
+    .filter(lambda n: n != 2)
+    .flatmap(
+        lambda n: decimals(
+            min_value=1000.00, allow_infinity=False, allow_nan=False, places=n
+        ).map(format_num)
+    )
 )
 
 # Generate smaller numbers that don't have to be in quotation marks
-small_number = decimals(min_value=0.00, max_value=999.99,
-    places=2).map(format_num)
+small_number = decimals(min_value=0.00, max_value=999.99, places=2).map(format_num)
 
 # Generate numbers with ',' as thousands separator and surround them with quotation marks.
 # This is the expected format in CSV-files that use comma as the value separator.
@@ -94,30 +108,35 @@ list_of_large_number_in_quotes = integers(min_value=0, max_value=16).flatmap(
 
 # ----------- Hypothesis tests -----------
 
-@settings(max_examples=10**4)
+
+@settings(max_examples=10 ** 4)
 @given(num=large_number)
 def test_large_num_in_quotes(num: str):
     print(num)
-    assert(put_into_quotes(num) == insert_quotes(num))
+    assert put_into_quotes(num) == insert_quotes(num)
 
-@settings(max_examples=10**3)
+
+@settings(max_examples=10 ** 3)
 @given(num=small_number)
 def test_small_number_not_in_quotes(num: str):
-    assert(put_into_quotes(num) == num)
+    assert put_into_quotes(num) == num
 
-@settings(max_examples=10**3)
+
+@settings(max_examples=10 ** 3)
 @given(num=large_number_in_quotes)
 def test_large_number_in_quotes(num: str):
-    assert(put_into_quotes(num) == num)
+    assert put_into_quotes(num) == num
 
-@settings(max_examples=10**3)
+
+@settings(max_examples=10 ** 3)
 @given(num=large_number_too_many_or_few_decimals)
 def test_too_many_or_few_decimals(num):
-    test_str = f'{num}, {insert_quotes(num)}'
+    test_str = f"{num}, {insert_quotes(num)}"
     result = put_into_quotes(test_str)
     assert result == test_str
 
-@settings(max_examples=10**3)
+
+@settings(max_examples=10 ** 3)
 @given(list_of_large_number, list_of_large_number_in_quotes, data())
 def test_inject_into_text(large_nums, large_nums_in_quotes, data):
     """
@@ -129,19 +148,21 @@ def test_inject_into_text(large_nums, large_nums_in_quotes, data):
     """
     n_bad_format = len(large_nums)
 
-    all_numbers = large_nums # rename
+    all_numbers = large_nums  # rename
     all_numbers.extend(large_nums_in_quotes)
     random.shuffle(all_numbers)
 
     padded_nums = []
     some_text = lambda: data.draw(text(max_size=16))
     for num in all_numbers:
-        padded_nums.append(f'{some_text()},{num},{some_text()}')
+        padded_nums.append(f"{some_text()},{num},{some_text()}")
 
-    test_string = ''.join(padded_nums)
+    test_string = "".join(padded_nums)
     assert len(_quoter._pattern.findall(test_string)) == n_bad_format
 
+
 # ----------- PyTest unit tests -----------
+
 
 def test_example_statement(csv_path):
     revolut_statement = csv_path.read_text()
@@ -158,7 +179,7 @@ def test_example_statement(csv_path):
 
 
 def test_replace(tmpdir, csv_path):
-    """ Verify that the orgignal file was overwritten. """
+    """Verify that the orgignal file was overwritten."""
     revolut_statement = csv_path.read_text()
 
     # copy to a temporary directory
@@ -172,8 +193,8 @@ def test_replace(tmpdir, csv_path):
 
 
 def test_out_dir(tmpdir, csv_path):
-    """ Verify that the output is written to the expected directory. """
-    out_dirs = [Path(tmpdir), Path.cwd(), Path('./')]
+    """Verify that the output is written to the expected directory."""
+    out_dirs = [Path(tmpdir), Path.cwd(), Path("./")]
     for out_dir in out_dirs:
         quoted_file = fix_revolut.quote_numbers(csv_path, out_dir=out_dir)
         assert out_dir / quoted_file.name == quoted_file
@@ -181,44 +202,50 @@ def test_out_dir(tmpdir, csv_path):
 
 
 def test_mutex_arguments(csv_path):
-    """ ``replace`` and ``out_dir`` are mutually exclusive. """
+    """``replace`` and ``out_dir`` are mutually exclusive."""
     with pytest.raises(ValueError):
         fix_revolut.quote_numbers(csv_path, replace=True, out_dir=Path.cwd())
+
 
 def test_wrong_thousands_sep():
     test_str = '1 000.00, "1 000.00"'
     result = put_into_quotes(test_str)
     assert result == test_str
 
+
 def test_space_thousands_sep():
     test_str = '1 000.00, "1 000.00"'
     expect = '"1 000.00", "1 000.00"'
-    nq = fix_revolut.NumberQuoter(thousands_sep= ' ')
+    nq = fix_revolut.NumberQuoter(thousands_sep=" ")
     result = nq.quote_str_number(test_str)
     assert result == expect
+
 
 def test_no_thousands_sep():
     test_str = '1000.00, "1000.00"'
     expect = '"1000.00", "1000.00"'
-    nq = fix_revolut.NumberQuoter(thousands_sep= '')
+    nq = fix_revolut.NumberQuoter(thousands_sep="")
     result = nq.quote_str_number(test_str)
     assert result == expect
 
+
 def test_wrong_decimal_sep():
     test_str = '1000,00, "1000,00"'
-    nq = fix_revolut.NumberQuoter(thousands_sep= '')
+    nq = fix_revolut.NumberQuoter(thousands_sep="")
     result = nq.quote_str_number(test_str)
     assert result == test_str
+
 
 def test_period_thousands_sep_and_comma_decimal_sep():
     test_str = '1.000,00, "1.000,00"'
     expect = '"1.000,00", "1.000,00"'
-    nq = fix_revolut.NumberQuoter(thousands_sep= '.', decimal_sep=',')
+    nq = fix_revolut.NumberQuoter(thousands_sep=".", decimal_sep=",")
     result = nq.quote_str_number(test_str)
     assert result == expect
 
+
 def test_failed_generated_test_1():
-    """ This is an example of intput that we do not handle.
+    """This is an example of intput that we do not handle.
     This input will, however, never be seen in practice because in CSV-files
     values must be separated.
 

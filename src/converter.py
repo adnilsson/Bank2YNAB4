@@ -34,15 +34,17 @@ from .config import BankConfig, TransactionFormat, CurrencyFormat
 MaybeDecimal: TypeAlias = Decimal | None
 MaybeDecimalPair: TypeAlias = tuple[MaybeDecimal, MaybeDecimal]
 
+
 class YnabHeader(NamedTuple):
-    """ Mapping to the column names specified by YNAB4
-    """
-    date: str = 'Date'
-    payee: str = 'Payee'
-    category: str = 'Category'
-    memo: str = 'Memo'
-    outflow: str = 'Outflow'
-    inflow: str = 'Inflow'
+    """Mapping to the column names specified by YNAB4"""
+
+    date: str = "Date"
+    payee: str = "Payee"
+    category: str = "Category"
+    memo: str = "Memo"
+    outflow: str = "Outflow"
+    inflow: str = "Inflow"
+
 
 class TransactionValueParser:
     _fraction_tag = "decimals"
@@ -50,7 +52,9 @@ class TransactionValueParser:
     def __init__(self, config: CurrencyFormat):
         self._thousands_match = re.compile(fr"{re.escape(config.thousands_sep)}")
         re_decimal_point = re.escape(config.decimal_point)
-        self._fractional_match = re.compile(fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9]{{2}}(?![0-9]))") # Assume a resolution of hundreds
+        self._fractional_match = re.compile(
+            fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9]{{2}}(?![0-9]))"
+        )  # Assume a resolution of hundreds
         self._decimal_match = re.compile(r"-?[0-9]+\.[0-9]{2}")
 
     def parse(self, value: str) -> MaybeDecimal:
@@ -58,7 +62,11 @@ class TransactionValueParser:
         no_thousands_groups = re.sub(self._thousands_match, "", value)
 
         # replace whatever decimal point was used with a dot
-        replaced_decimal= re.sub(self._fractional_match, "." + fr"\g<{self._fraction_tag}>", no_thousands_groups)
+        replaced_decimal = re.sub(
+            self._fractional_match,
+            "." + fr"\g<{self._fraction_tag}>",
+            no_thousands_groups,
+        )
 
         # match on a number string that can be converted to a Decimal
         number_only = re.search(self._decimal_match, replaced_decimal)
@@ -67,6 +75,7 @@ class TransactionValueParser:
 
         return Decimal(number_only[0])
 
+
 class Converter:
     def __init__(self, config: BankConfig):
         self.ynab_header = YnabHeader()
@@ -74,10 +83,10 @@ class Converter:
         self.config.normalizer = normalize
         self.transaction_parser = TransactionValueParser(config.currency_format)
 
-        self.ignoredRows   = []
-        self.readRows      = []
-        self.parsedRows    = []
-        self.numEmptyRows  = 0
+        self.ignoredRows = []
+        self.readRows = []
+        self.parsedRows = []
+        self.numEmptyRows = 0
 
     def convert(self, statement_csv: Path, toIgnore=None) -> bool:
         toIgnore = [] if toIgnore is None else toIgnore
@@ -85,23 +94,25 @@ class Converter:
         # Attempt to parse input file to a YNAB-formatted csv file
         # May raise OSError
         bankData = self.readInput(statement_csv, toIgnore)
-        parsed   = self.parseRows(bankData)
+        parsed = self.parseRows(bankData)
 
         return self.writeOutput(parsed)
 
     def readInput(self, statement_csv: Path, toIgnore) -> list[dict[str, str]]:
-        with statement_csv.open(encoding='utf-8-sig', newline='')  as f:
-            restkey='overflow'
+        with statement_csv.open(encoding="utf-8-sig", newline="") as f:
+            restkey = "overflow"
             reader = csv.DictReader(
                 f,
                 delimiter=self.config.csv_delimiter,
                 restkey=restkey,
-                skipinitialspace=True, # important since qouting won't work if there is leading whitespace
+                skipinitialspace=True,  # important since qouting won't work if there is leading whitespace
             )
-            reader.fieldnames = [self.config.normalizer(name) for name in reader.fieldnames]
+            reader.fieldnames = [
+                self.config.normalizer(name) for name in reader.fieldnames
+            ]
             try:
                 for raw_row in reader:
-                    if (overflowing_columns := raw_row.get(restkey)):
+                    if overflowing_columns := raw_row.get(restkey):
                         msg = f"Exccess columns found: {overflowing_columns=}"
                         warnings.warn(msg, RuntimeWarning)
                         del raw_row[restkey]
@@ -110,25 +121,34 @@ class Converter:
                     is_empty = all((len(v) == 0 for v in row.values()))
                     if is_empty:
                         warnings.warn(
-                            f'\n\tSkipping empty row {reader.line_num}: {row}',
-                            RuntimeWarning)
+                            f"\n\tSkipping empty row {reader.line_num}: {row}",
+                            RuntimeWarning,
+                        )
                         self.numEmptyRows += 1
                     else:
-                        if (payee := row.get(self.config.payee_column)) and len(toIgnore) > 0:
+                        if (payee := row.get(self.config.payee_column)) and len(
+                            toIgnore
+                        ) > 0:
                             for i in toIgnore:
                                 if i not in payee:
                                     self.readRows.append(row)
                                 else:
                                     self.ignoredRows.append(row)
                         else:
-                                self.readRows.append(row)
+                            self.readRows.append(row)
             except csv.Error as e:
-                raise OSError(f'file {str(statement_csv)}\n line {row}: {e}')
+                raise OSError(f"file {str(statement_csv)}\n line {row}: {e}")
             finally:
-                print('{0}/{1} line(s) successfully read '
-                      '(ignored {2} blank line(s) and '
-                       '{3} transactions found in accignore).'
-                      .format(len(self.readRows), reader.line_num-1, self.numEmptyRows, len(self.ignoredRows)))
+                print(
+                    "{0}/{1} line(s) successfully read "
+                    "(ignored {2} blank line(s) and "
+                    "{3} transactions found in accignore).".format(
+                        len(self.readRows),
+                        reader.line_num - 1,
+                        self.numEmptyRows,
+                        len(self.ignoredRows),
+                    )
+                )
 
         return self.readRows
 
@@ -137,10 +157,10 @@ class Converter:
             try:
                 self.parsedRows.append(self.parseRow(row))
             except (ValueError, TypeError) as e:
-                msg = f'\n\t{row}\n\tError: {e}'
+                msg = f"\n\t{row}\n\tError: {e}"
                 warnings.warn(badFormatWarn(msg), RuntimeWarning)
 
-        print(f'{len(self.parsedRows)}/{len(bankRows)} line(s) successfully parsed ')
+        print(f"{len(self.parsedRows)}/{len(bankRows)} line(s) successfully parsed ")
 
         return self.parsedRows
 
@@ -150,7 +170,7 @@ class Converter:
             return None, None
 
         outflow = abs(decimal) if decimal.is_signed() else None
-        inflow  = decimal if not decimal.is_signed() else None
+        inflow = decimal if not decimal.is_signed() else None
 
         return outflow, inflow
 
@@ -177,7 +197,9 @@ class Converter:
     def parseTransactionValues(self, bankline) -> MaybeDecimalPair:
         parsed_values = []
         for column in self.config.transaction_columns:
-            v = self.parse_column_value(bankline[column.header_key], column.transaction_format)
+            v = self.parse_column_value(
+                bankline[column.header_key], column.transaction_format
+            )
             parsed_values.append(v)
 
         none_filter = functools.partial(filter, lambda v: v is not None)
@@ -185,7 +207,9 @@ class Converter:
 
         return net_out, net_in
 
-    def parse_column_value(self, value: str, format: TransactionFormat) -> MaybeDecimalPair:
+    def parse_column_value(
+        self, value: str, format: TransactionFormat
+    ) -> MaybeDecimalPair:
         match format:
             case TransactionFormat.AMOUNT:
                 transaction_parser = self._parse_amount
@@ -194,12 +218,16 @@ class Converter:
             case TransactionFormat.INFLOW:
                 transaction_parser = self._parse_inflow
             case _:
-                raise RuntimeError(f"{self.config.transaction_format=} is not a valid TransactionFormat")
+                raise RuntimeError(
+                    f"{self.config.transaction_format=} is not a valid TransactionFormat"
+                )
 
         if transaction_parser is None:
-            raise RuntimeError(f'expected {TransactionFormat.AMOUNT} or'
-                f' {TransactionFormat.OUT_IN} as transaction'
-                f' format, got {self.csvTrasactionFormat=}')
+            raise RuntimeError(
+                f"expected {TransactionFormat.AMOUNT} or"
+                f" {TransactionFormat.OUT_IN} as transaction"
+                f" format, got {self.csvTrasactionFormat=}"
+            )
 
         return transaction_parser(value)
 
@@ -208,11 +236,15 @@ class Converter:
         outflow, inflow = decimal_pair_to_str(self.parseTransactionValues(bankline))
 
         bank_date = bankline[self.config.date_column]
-        date = datetime.strptime(bank_date, self.config.date_format) # convert to datetime
-        date = date.strftime('%Y/%m/%d')  # YNAB4 desired format
+        date = datetime.strptime(
+            bank_date, self.config.date_format
+        )  # convert to datetime
+        date = date.strftime("%Y/%m/%d")  # YNAB4 desired format
 
-        yh = self.ynab_header # rename
-        ynab_row = dict().fromkeys(list(self.ynab_header)) # assert same ordering of keys as self.ynab_header
+        yh = self.ynab_header  # rename
+        ynab_row = dict().fromkeys(
+            list(self.ynab_header)
+        )  # assert same ordering of keys as self.ynab_header
         ynab_row[yh.date] = date
         ynab_row[yh.outflow] = outflow
         ynab_row[yh.inflow] = inflow
@@ -228,37 +260,39 @@ class Converter:
         if parsedRows == None or len(parsedRows) == 0:
             return hasWritten
 
-        with open('ynabImport.csv', 'w', encoding='utf-8', newline='') as outputFile:
+        with open("ynabImport.csv", "w", encoding="utf-8", newline="") as outputFile:
             writer = csv.DictWriter(outputFile, list(self.ynab_header))
             try:
                 writer.writeheader()
                 writer.writerows(parsedRows)
                 hasWritten = True
-                print('YNAB csv-file successfully written.')
+                print("YNAB csv-file successfully written.")
             except csv.Error as e:
-                raise OSError(f'File {outputFile}, line {writer.line_num}: {e}')
+                raise OSError(f"File {outputFile}, line {writer.line_num}: {e}")
             finally:
                 return hasWritten
+
 
 def decimal_pair_to_str(dp: MaybeDecimalPair) -> tuple[str | None]:
     to_str = lambda d: str(d) if d is not None else None
     return tuple(to_str(d) for d in dp)
 
+
 def readIgnore():
     accounts = []
     try:
-        with open('accignore.txt', encoding='utf-8', newline='') as ignored:
+        with open("accignore.txt", encoding="utf-8", newline="") as ignored:
             for account in ignored:
                 accounts.append(account)
-        msg = f'Ignoring transactions from account(s): {accounts}'
+        msg = f"Ignoring transactions from account(s): {accounts}"
     except OSError:
-        msg = 'Parsing all transactions...'
+        msg = "Parsing all transactions..."
     print(msg)
     return accounts
 
 
 def badFormatWarn(entry):
-    return f'\n\tIncorrectly formated row:{entry}\n\t Skipping...'
+    return f"\n\tIncorrectly formated row:{entry}\n\t Skipping..."
 
 
 def normalize(value: str) -> str:
@@ -266,18 +300,22 @@ def normalize(value: str) -> str:
 
 
 def bank2ynab(bank: BankConfig, statement_csv: Path):
-    """ Perform the conversion from a bank csv-file to YNAB's csv format
-    """
+    """Perform the conversion from a bank csv-file to YNAB's csv format"""
     converter = Converter(config=bank)
 
     # Check for accignore.txt and obtain a list of ignored accounts.
     try:
         ignoredAccounts = readIgnore()
     except OSError:
-        ignoredAccounts = []    # It's okay to not have it.
+        ignoredAccounts = []  # It's okay to not have it.
 
     # Do the conversion:
     # fetch file, attempt parsing, write output, and return results.
     hasConverted = converter.convert(statement_csv, ignoredAccounts)
-    return (hasConverted, converter.numEmptyRows, len(converter.ignoredRows),
-            len(converter.readRows), len(converter.parsedRows))
+    return (
+        hasConverted,
+        converter.numEmptyRows,
+        len(converter.ignoredRows),
+        len(converter.readRows),
+        len(converter.parsedRows),
+    )
