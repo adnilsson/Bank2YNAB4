@@ -54,25 +54,3 @@ Some keys in the template's `ynab_mapping` table are optional, however:
    Besides the `date` key, exactly one of these two formats **must** be specified in the `ynab_mapping` table.
 
 The new bank is automatically included in the drop-down menu of available banks.
-
-## Fixing statements exported from Revolut
-
-Unfortunately, Revolut does not export statements in well-formatted CSV.
-A problem is that they use comma both as thousands separator and as the value delimiter.
-The way you would solve this is to simply surround numbers in quotation marks, change the delimiter, or change the thousands separator.
-Alas, they do not do this, and it has been a known issue since at least [2017](https://community.revolut.com/t/statements-in-excel-csv-format-errors/8655).
-You can see an example of how an exported file (from 2021) might look like in `tests/example_csv/revolut_v1.csv`.
-
-This repository provides a script that fixes such ill-formed CSV-files.
-The approach is to surround any large number (i.e., greater than 999.99) in the file with quotation marks.
-The script is tested and documented, and you should be able to figure out how to use it from the help output:
-
-```bash
-python scripts/fix_revolut.py --help
-```
-
-You can also try it on the examlpe file:
-```bash
-python scripts/fix_revolut.py tests/example_csv/revolut_v1.csv --out ./
-cat revolut_v1_OUT.csv
-```
