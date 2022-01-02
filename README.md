@@ -16,7 +16,7 @@ Also, I don't want to be forced to store all my bank data on their servers.
 ## Installation
 
 1. Clone or download the repository
-2. Refer to the User Guide
+2. Refer to the [User guide](#user-guide)
 
 ### Requirements
 
