@@ -47,12 +47,11 @@ Nevertheless, a short description can be helpful:
 2. Give the bank an appropriate `name` and specify all delimiters and the date format used.
 3. Fill out the `ynab_mapping` table with the corresponding column names from the bank's CSV statement.
 
-Some keys in the template's `ynab_mapping` table are optional, however:
+Some keys in the template's `ynab_mapping` table are optional.
+However:
 * The `date` key **must** exist in the `ynab_mapping` table.
-* Two formats for the transaction amount are supported:
-   - A single field, indicated by the `amount` key.
-   - Separate fields, indicated by keys `outflow` and `inflow`.
-
-   Besides the `date` key, exactly one of these two formats **must** be specified in the `ynab_mapping` table.
+* You **must** provide both the `outflow` and `inflow` keys.
+   - If your bank only provides an 'amount' column, you should use that column name for both the `outflow` and `inflow`.
+   - You can assign a list of column names to `outflow` if your bank, for example, has multiple outflows (such as an extra 'fee' column).
 
 The new bank is automatically included in the drop-down menu of available banks.
