@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from util import load_test_example, load_bank_config, load_template_config, net_flow
-from scripts.fix_revolut import fix_revolut
 from src.converter import bank2ynab
 from src.config import BankConfig
 

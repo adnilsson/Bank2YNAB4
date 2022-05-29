@@ -53,9 +53,11 @@ class TransactionValueParser:
         self._thousands_match = re.compile(fr"{re.escape(config.thousands_sep)}")
         re_decimal_point = re.escape(config.decimal_point)
         self._fractional_match = re.compile(
-            fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9]{{2}}(?![0-9]))"
-        )  # Assume a resolution of hundreds
-        self._decimal_match = re.compile(r"-?[0-9]+\.[0-9]{2}")
+            fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9][0-9]?(?![0-9]))"
+        )  # Assume a resolution of tens or hundreds
+
+        # It is optional to have decimals, i.e., "10" instead of "10.00" or "10.0"
+        self._decimal_match = re.compile(r"-?[0-9]+(\.[0-9][0-9]?)?")
 
     def parse(self, value: str) -> MaybeDecimal:
         # remove all thousands separators
