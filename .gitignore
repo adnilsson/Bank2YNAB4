@@ -10,7 +10,7 @@ __pycache__/
 *.csv
 
 # ...except the ones eplicitly added as examples
-!tests/example_csv/*.csv
+!tests/example_csv/**/*.csv
 !scripts/fix_revolut/*.csv
 
 # Distribution / packaging
