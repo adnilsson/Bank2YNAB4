@@ -1,6 +1,5 @@
 [tool.poetry]
 name = "bank2ynab"
-version = "0.1.0"
 description = ""
 authors = ["Adrian Nilsson"]
 license = "MIT"
