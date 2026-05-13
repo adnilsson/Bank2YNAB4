@@ -2,13 +2,13 @@ from pathlib import Path
 from tkinter import Tk, StringVar, Toplevel, Message
 from tkinter.ttk import Combobox, Frame, Button, Label
 from tkinter.filedialog import askopenfilename
-from src.converter import bank2ynab
-from src.config import BankConfig
+from bank2ynab.converter import convert as b2y_convert
+from bank2ynab.config import BankConfig
 
 PADX = 12
 PADY = 10
 
-BANK_DIR = Path("./banks")
+BANK_DIR = Path(__file__).parent.parent / "banks"
 
 ###################################
 #           GUI-code
@@ -69,7 +69,7 @@ class BankSelection(Frame):
             pass  # No file selected
         else:
             try:
-                result = bank2ynab(bank, inputPath)
+                result = b2y_convert(bank, inputPath)
                 self.master.switch_frame(Report, result)
             except (NameError, OSError, ValueError, TypeError) as e:
                 Error(self, e)
