@@ -16,12 +16,12 @@ classifiers = [
 dependencies = ["tomli>=1.2.1,<2"]
 
 [dependency-groups]
-dev = [
-    "pytest>=6.2.4,<7",
-    "hypothesis>=6.14.1,<7",
-    "black>=21.12b0,<22",
-]
+dev = ["pytest>=6.2.4,<7", "hypothesis>=6.14.1,<7", "ruff>=0.15.12"]
 
 [build-system]
 requires = ["uv_build>=0.11.13,<0.12.0"]
 build-backend = "uv_build"
+
+[tool.ruff]
+lint.ignore = ["E731"]
+lint.extend-select = ["I"]

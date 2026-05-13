@@ -1,8 +1,9 @@
 from pathlib import Path
-from bank2ynab.config import BankConfig
-from tests.util import load_template_config
 
 import pytest
+
+from bank2ynab.config import BankConfig
+from tests.util import load_template_config
 
 
 @pytest.fixture

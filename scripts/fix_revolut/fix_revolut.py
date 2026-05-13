@@ -25,7 +25,7 @@ class NumberQuoter:
         """Surround numbers with thousands seperators in quotes.
         Only numbers that aren't already in quotation marks will be replaced.
         """
-        return self._pattern.sub(fr'"\g<{self._group_tag}>"', string)
+        return self._pattern.sub(rf'"\g<{self._group_tag}>"', string)
 
 
 def quote_numbers(

@@ -1,9 +1,9 @@
-from pathlib import Path
 from decimal import Decimal
+from pathlib import Path
 
-from tests.util import load_test_example, load_bank_config, net_flow
-from bank2ynab.converter import convert
 from bank2ynab.config import BankConfig
+from bank2ynab.converter import convert
+from tests.util import load_bank_config, load_test_example, net_flow
 
 
 def test_revolut_v2_regression_01():

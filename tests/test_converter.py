@@ -1,8 +1,13 @@
 from pathlib import Path
 
-from tests.util import load_test_example, load_bank_config, load_template_config, net_flow
-from bank2ynab.converter import convert
 from bank2ynab.config import BankConfig
+from bank2ynab.converter import convert
+from tests.util import (
+    load_bank_config,
+    load_template_config,
+    load_test_example,
+    net_flow,
+)
 
 
 def test_ica_banken_v1():
