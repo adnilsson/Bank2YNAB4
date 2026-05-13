@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from util import load_test_example, load_bank_config, load_template_config, net_flow
-from src.converter import bank2ynab
-from src.config import BankConfig
+from tests.util import load_test_example, load_bank_config, load_template_config, net_flow
+from bank2ynab.converter import convert
+from bank2ynab.config import BankConfig
 
 
 def test_ica_banken_v1():
@@ -11,7 +11,7 @@ def test_ica_banken_v1():
     ica_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 5, 5)
-    result = bank2ynab(ica_config, csv_path)
+    result = convert(ica_config, csv_path)
     assert expect == result
 
 
@@ -21,7 +21,7 @@ def test_nordea_v2():
     nordea_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 4, 4)
-    result = bank2ynab(nordea_config, csv_path)
+    result = convert(nordea_config, csv_path)
     assert expect == result
 
 
@@ -31,7 +31,7 @@ def test_revolut_v2():
     revolut_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 5, 5)
-    result = bank2ynab(revolut_config, csv_path)
+    result = convert(revolut_config, csv_path)
     assert expect == result
 
 
@@ -41,7 +41,7 @@ def test_identity():
     template_config = BankConfig.from_file(toml_path)
 
     expect = (True, 0, 0, 2, 2)
-    result = bank2ynab(template_config, csv_path)
+    result = convert(template_config, csv_path)
     assert expect == result
 
     net_bank = net_flow(csv_path)

@@ -301,7 +301,7 @@ def normalize(value: str) -> str:
     return value.strip().lower()
 
 
-def bank2ynab(bank: BankConfig, statement_csv: Path):
+def convert(bank: BankConfig, statement_csv: Path):
     """Perform the conversion from a bank csv-file to YNAB's csv format"""
     converter = Converter(config=bank)
 

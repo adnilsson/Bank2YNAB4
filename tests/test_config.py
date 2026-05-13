@@ -1,6 +1,6 @@
 from pathlib import Path
-from src.config import BankConfig
-from util import load_template_config
+from bank2ynab.config import BankConfig
+from tests.util import load_template_config
 
 import pytest
 
