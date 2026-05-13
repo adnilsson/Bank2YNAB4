@@ -1,9 +1,10 @@
 import enum
-from dataclasses import dataclass
 import warnings
-import tomli
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+
+import tomli
 
 
 def _assert_not_empty(column_name: str) -> str:

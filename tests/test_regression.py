@@ -1,9 +1,9 @@
-from pathlib import Path
 from decimal import Decimal
+from pathlib import Path
 
-from util import load_test_example, load_bank_config, net_flow
-from src.converter import bank2ynab
-from src.config import BankConfig
+from bank2ynab.config import BankConfig
+from bank2ynab.converter import convert
+from tests.util import load_bank_config, load_test_example, net_flow
 
 
 def test_revolut_v2_regression_01():
@@ -26,7 +26,7 @@ def test_revolut_v2_regression_01():
 
     # Do the conversion and sanity check the results
     expect = (True, 0, 0, 5, 5)
-    result = bank2ynab(revolut_config, csv_path)
+    result = convert(revolut_config, csv_path)
     assert expect == result
 
     # Assert that the net flow is what we expect

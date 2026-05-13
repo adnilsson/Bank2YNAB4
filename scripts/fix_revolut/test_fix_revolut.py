@@ -1,12 +1,11 @@
+import random
 from decimal import Decimal
 from pathlib import Path
-import random
-
-from hypothesis.strategies import decimals, data, lists, text, integers
-from hypothesis import given, settings
-import pytest
 
 import fix_revolut
+import pytest
+from hypothesis import given, settings
+from hypothesis.strategies import data, decimals, integers, lists, text
 
 _quoter = fix_revolut.NumberQuoter()  # class under test
 put_into_quotes = _quoter.quote_str_number
@@ -109,26 +108,26 @@ list_of_large_number_in_quotes = integers(min_value=0, max_value=16).flatmap(
 # ----------- Hypothesis tests -----------
 
 
-@settings(max_examples=10 ** 4)
+@settings(max_examples=10**4)
 @given(num=large_number)
 def test_large_num_in_quotes(num: str):
     print(num)
     assert put_into_quotes(num) == insert_quotes(num)
 
 
-@settings(max_examples=10 ** 3)
+@settings(max_examples=10**3)
 @given(num=small_number)
 def test_small_number_not_in_quotes(num: str):
     assert put_into_quotes(num) == num
 
 
-@settings(max_examples=10 ** 3)
+@settings(max_examples=10**3)
 @given(num=large_number_in_quotes)
 def test_large_number_in_quotes(num: str):
     assert put_into_quotes(num) == num
 
 
-@settings(max_examples=10 ** 3)
+@settings(max_examples=10**3)
 @given(num=large_number_too_many_or_few_decimals)
 def test_too_many_or_few_decimals(num):
     test_str = f"{num}, {insert_quotes(num)}"
@@ -136,7 +135,7 @@ def test_too_many_or_few_decimals(num):
     assert result == test_str
 
 
-@settings(max_examples=10 ** 3)
+@settings(max_examples=10**3)
 @given(list_of_large_number, list_of_large_number_in_quotes, data())
 def test_inject_into_text(large_nums, large_nums_in_quotes, data):
     """

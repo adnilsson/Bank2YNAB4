@@ -1,13 +1,13 @@
-from datetime import datetime
-from decimal import Decimal
-import functools
-from pathlib import Path
-from typing import NamedTuple, TypeAlias
 import csv
+import functools
 import re
 import warnings
+from datetime import datetime
+from decimal import Decimal
+from pathlib import Path
+from typing import NamedTuple, TypeAlias
 
-from .config import BankConfig, TransactionFormat, CurrencyFormat
+from .config import BankConfig, CurrencyFormat, TransactionFormat
 
 # TODO:
 # * Make accignore a feature of the bank config file
@@ -50,10 +50,10 @@ class TransactionValueParser:
     _fraction_tag = "decimals"
 
     def __init__(self, config: CurrencyFormat):
-        self._thousands_match = re.compile(fr"{re.escape(config.thousands_sep)}")
+        self._thousands_match = re.compile(rf"{re.escape(config.thousands_sep)}")
         re_decimal_point = re.escape(config.decimal_point)
         self._fractional_match = re.compile(
-            fr"{re_decimal_point}(?P<{self._fraction_tag}>[0-9][0-9]?(?![0-9]))"
+            rf"{re_decimal_point}(?P<{self._fraction_tag}>[0-9][0-9]?(?![0-9]))"
         )  # Assume a resolution of tens or hundreds
 
         # It is optional to have decimals, i.e., "10" instead of "10.00" or "10.0"
@@ -66,7 +66,7 @@ class TransactionValueParser:
         # replace whatever decimal point was used with a dot
         replaced_decimal = re.sub(
             self._fractional_match,
-            "." + fr"\g<{self._fraction_tag}>",
+            "." + rf"\g<{self._fraction_tag}>",
             no_thousands_groups,
         )
 
@@ -259,7 +259,7 @@ class Converter:
     def writeOutput(self, parsedRows) -> bool:
         hasWritten = False
 
-        if parsedRows == None or len(parsedRows) == 0:
+        if parsedRows is None or len(parsedRows) == 0:
             return hasWritten
 
         with open("ynabImport.csv", "w", encoding="utf-8", newline="") as outputFile:
@@ -301,7 +301,7 @@ def normalize(value: str) -> str:
     return value.strip().lower()
 
 
-def bank2ynab(bank: BankConfig, statement_csv: Path):
+def convert(bank: BankConfig, statement_csv: Path):
     """Perform the conversion from a bank csv-file to YNAB's csv format"""
     converter = Converter(config=bank)
 
