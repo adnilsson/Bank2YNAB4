@@ -8,7 +8,10 @@ license = "MIT"
 dependencies = []
 
 [dependency-groups]
-dev = ["pytest>=9.0.0,<10", "hypothesis>=6.152.7,<7", "ruff>=0.15.13,<1"]
+dev = [
+    "pytest>=9.0.0,<10",
+    "ruff>=0.15.13,<1",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]
