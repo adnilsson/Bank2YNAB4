@@ -10,7 +10,7 @@ Besides being much nicer to use than a simple spreadsheet, YNAB4 was great for t
 2. Data stored locally, with the option of uploading to Dropbox.
 
 The new, web-based YNAB follows a monthly subscription model.
-Paying $7 to make my monthly budget just does not make sense for me.
+Paying ~~$7~~ [$14.99](https://www.ynab.com/pricing) for software I use exactly once a month does not make sense for me.
 Also, I don't want to be forced to store all my bank data on their servers.
 
 ## Installation
@@ -20,12 +20,12 @@ Also, I don't want to be forced to store all my bank data on their servers.
 
 ### Requirements
 
-* Python ^3.10
+* Python ^3.14
 
 # User guide
 
 Using Bank2YNAB4 is straightforward:
-1. Run `bank2ynab.py` to launch the application.
+1. Run `bank2ynab.pyw` to launch the application.
 2. Select one of the available banks from the drop-down menu.
 3. From the dialog, find and select the CSV file from the bank (a header is assumed to exist in the CSV-file).
 4. If conversion succeeded, then the converted CSV file is written to `ynabImport.csv` in the same directory as `bank2ynab.pyw`.
