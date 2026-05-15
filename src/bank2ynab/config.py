@@ -1,10 +1,9 @@
 import enum
+import tomllib
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
-
-import tomli
 
 
 def _assert_not_empty(column_name: str) -> str:
@@ -201,7 +200,7 @@ class BankConfig:
     @classmethod
     def from_file(cls, toml_config: Path):
         with toml_config.open(mode="rb") as f:
-            config = tomli.load(f)
+            config = tomllib.load(f)
         return cls.from_dict(config)
 
     @classmethod

@@ -271,8 +271,8 @@ class Converter:
                 print("YNAB csv-file successfully written.")
             except csv.Error as e:
                 raise OSError(f"File {outputFile}, line {writer.line_num}: {e}")
-            finally:
-                return hasWritten
+
+        return hasWritten
 
 
 def decimal_pair_to_str(dp: MaybeDecimalPair) -> tuple[str | None]:
